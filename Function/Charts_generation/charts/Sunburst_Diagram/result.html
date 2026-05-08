@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>旭日图</title>
+<style>
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+html, body {
+  width: 100%;
+  height: 100%;
+}
+body {
+  font-family: "Heiti SC", "Microsoft YaHei", sans-serif;
+  background: #fafafa;
+  padding: 20px;
+}
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+.chart-wrap {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 2px 12px rgba(0,0,0,.08);
+  padding: 24px;
+  margin-bottom: 32px;
+  min-height: 600px;
+  display: flex;
+  flex-direction: column;
+}
+.chart-wrap h1 {
+  color: #222;
+  font-size: 22px;
+  margin-bottom: 6px;
+}
+.chart-wrap .subtitle {
+  color: #888;
+  font-size: 13px;
+  margin-bottom: 24px;
+}
+.chart-container {
+  flex: 1;
+  width: 100%;
+  min-height: 500px;
+}
+.plotly-graph-div {
+  width: 100% !important;
+  height: 100% !important;
+}
+.desc {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 2px 12px rgba(0,0,0,.08);
+  padding: 24px;
+  color: #555;
+  font-size: 14px;
+  line-height: 1.7;
+}
+.desc strong {
+  color: #222;
+}
+</style>
+</head>
+<body>
+<div class="container">
+<div class="chart-wrap">
+<h1>旭日图</h1>
+<div class="subtitle">sunburst | plotly</div>
+<div class="chart-container">
+<div>
+    <script>window.PlotlyConfig = {MathJaxConfig: 'local'};</script>
+    <script charset="utf-8" src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
+    <div id="sunburst-680158b0d13240e6beb82c9126b88ef5" class="plotly-graph-div" style="height:500px; width:100%;"></div>
+    <script>
+        (function() {
+            try {
+                var fig = {"data": [{"type": "sunburst", "ids": ["地区=华东", "地区=华北", "地区=华东|城市=上海", "地区=华东|城市=杭州", "地区=华北|城市=北京", "地区=华北|城市=天津"], "labels": ["华东", "华北", "上海", "杭州", "北京", "天津"], "values": [8000.0, 6000.0, 5000.0, 3000.0, 4000.0, 2000.0], "parents": ["", "", "地区=华东", "地区=华东", "地区=华北", "地区=华北"], "branchvalues": "total", "hole": 0.35, "marker": {"line": {"width": 0}, "colors": ["#003B71", "#005CAB", "#0083CA", "#00A3E0", "#7FBA00", "#FFC000"]}, "hovertemplate": "%{label}<br>值=%{value}<extra></extra>"}], "layout": {"title": {"text": "旭日图", "font": {"size": 16}}, "font": {"family": "Heiti SC, Microsoft YaHei, sans-serif"}, "plot_bgcolor": "white", "paper_bgcolor": "white", "margin": {"l": 0, "r": 0, "t": 40, "b": 0}, "hovermode": "closest", "height": 500}};
+                Plotly.newPlot('sunburst-680158b0d13240e6beb82c9126b88ef5', fig.data, fig.layout, {
+                    responsive: true,
+                    displayModeBar: false
+                });
+            } catch (e) {
+                console.error("Sunburst render error:", e);
+                var el = document.getElementById('sunburst-680158b0d13240e6beb82c9126b88ef5');
+                if (el) {
+                    el.innerHTML = '<div style="color:#c00;padding:12px;">图表渲染失败，请打开控制台查看错误。</div>';
+                }
+            }
+        })();
+    </script>
+</div>
+</div>
+</div>
+<div class="desc">
+<strong>数据格式：</strong>labels列(节点名称) + values列(数值) + 可选parents列(父级)<br>
+<strong>说明：</strong>用圆形扇区表示占比，支持多层级嵌套展示。适合展示有层级且数量较多的分类数据。
+</div>
+</div>
+</body>
+</html>

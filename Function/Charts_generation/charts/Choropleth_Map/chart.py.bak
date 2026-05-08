@@ -1,0 +1,337 @@
+"""
+地理热力图 - pyecharts Geo
+图表分类: 地理 Geographic | 书章节: Ch7
+感知排名: ★★★★☆
+
+统一接口:
+    generate(df, mapping, options) -> ChartResult
+"""
+import sys
+import re
+from pathlib import Path
+from typing import Dict, Any, Optional
+
+import pandas as pd
+
+_PROJECT_ROOT = Path(__file__).parent.parent.parent
+if str(_PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(_PROJECT_ROOT))
+
+from charts.base import ChartResult
+
+__all__ = ["generate"]
+
+_DATA_FMT = "label列(地区名) + value列(数值) — 或 — lat列(纬度) + lng列(经度) + value列"
+_DESC = "基于 pyecharts Geo，用圆圈大小和颜色深浅展示各地区数值，支持区县级精度。"
+
+
+def _is_string_col(s: pd.Series) -> bool:
+    """判断列是否为字符串类型（兼容 object/string/str dtype）。"""
+    if pd.api.types.is_numeric_dtype(s):
+        return False
+    if pd.api.types.is_datetime64_any_dtype(s):
+        return False
+    return True
+
+
+def _detect_label_col(df: pd.DataFrame, exclude: set) -> Optional[str]:
+    """自动识别地区名列（字符串列）。"""
+    for c in df.columns:
+        if c in exclude:
+            continue
+        if _is_string_col(df[c]):
+            return c
+    return None
+
+
+def _detect_value_col(df: pd.DataFrame, exclude: set, hint: str = None) -> Optional[str]:
+    """自动识别数值列。"""
+    if hint:
+        for c in df.columns:
+            if c not in exclude and c.lower() == hint.lower():
+                return c
+    for c in df.columns:
+        if c not in exclude and pd.api.types.is_numeric_dtype(df[c]):
+            return c
+    return None
+
+
+def _detect_coord_cols(df: pd.DataFrame, lat_hint: str, lng_hint: str):
+    """按列名精确匹配，再按数值范围（lat<=90，lng>90）自动识别经纬度列。"""
+    nums = [c for c in df.columns if pd.api.types.is_numeric_dtype(df[c])]
+    lat_col, lng_col = None, None
+
+    # 精确列名匹配
+    for c in df.columns:
+        cl = c.lower()
+        if cl in (lat_hint.lower(), "lat", "latitude", "纬度"):
+            lat_col = c
+        if cl in (lng_hint.lower(), "lng", "lon", "longitude", "经度"):
+            lng_col = c
+
+    # 按数值范围修正/识别
+    coord_num_cols = []
+    for c in nums:
+        mx = pd.to_numeric(df[c], errors="coerce").abs().max()
+        if mx <= 180:
+            coord_num_cols.append((c, mx))
+
+    if lat_col and lng_col:
+        lat_max = pd.to_numeric(df[lat_col], errors="coerce").abs().max()
+        lng_max = pd.to_numeric(df[lng_col], errors="coerce").abs().max()
+        if lat_max > 90 and lng_max <= 90:
+            lat_col, lng_col = lng_col, lat_col
+    else:
+        coord_num_cols.sort(key=lambda x: x[1])
+        if len(coord_num_cols) >= 2 and not lat_col:
+            lat_col = coord_num_cols[0][0]
+        if len(coord_num_cols) >= 2 and not lng_col:
+            for c, _ in coord_num_cols[1:]:
+                if c != lat_col:
+                    lng_col = c
+                    break
+
+    return lat_col, lng_col
+
+
+def generate(
+    df: pd.DataFrame = None,
+    mapping: Dict[str, str] = None,
+    options: Dict[str, Any] = None,
+    excel_path: str = None,
+    lat: str = "lat",
+    lng: str = "lng",
+    value: str = "value",
+    label: str = None,
+    title: str = "地理热力分布图",
+    maptype: str = "china",
+    chart_type: str = "effectScatter",
+    symbol_size: int = 15,
+    **kwargs,
+) -> ChartResult:
+    """
+    chart_type 可选: 'effectScatter'(动态涟漪), 'scatter'(静态点), 'heatmap'(热力)
+    maptype 可选: 'china', '湖北', '宜昌', 省名, 市名 等
+    """
+    from pyecharts.charts import Geo
+    from pyecharts import options as opts
+    from pyecharts.globals import ChartType
+
+    warnings: list = []
+    options = options or {}
+    mapping = mapping or {}
+
+    if df is None:
+        if excel_path:
+            try:
+                df = pd.read_excel(excel_path)
+            except Exception as e:
+                return ChartResult(warnings=[f"读取Excel失败: {e}"])
+        else:
+            return ChartResult(warnings=["请提供 df 或 excel_path"])
+
+    lat_hint = mapping.get("lat") or lat
+    lng_hint = mapping.get("lng") or lng
+    val_hint = mapping.get("value") or value
+    label_hint = mapping.get("label") or label
+    title = options.get("title", title)
+    maptype = options.get("maptype", maptype)
+    chart_type = options.get("chart_type", chart_type)
+    symbol_size = options.get("symbol_size", symbol_size)
+
+    # 识别列
+    used: set = set()
+
+    # 优先地区名模式
+    _label = None
+    if label_hint and label_hint in df.columns:
+        _label = label_hint
+    else:
+        _label = _detect_label_col(df, used)
+    if _label:
+        used.add(_label)
+
+    _value = _detect_value_col(df, used, val_hint)
+    if _value:
+        used.add(_value)
+
+    # 经纬度（可选，有地区名时不强制需要）
+    _lat, _lng = _detect_coord_cols(df, lat_hint, lng_hint)
+
+    # ── 验证必要字段 ──────────────────────────────────────
+    if _value is None:
+        warnings.append("找不到数值列 [value]")
+        return ChartResult(warnings=warnings)
+
+    if _label is None and (_lat is None or _lng is None):
+        warnings.append("需要地区名列 或 经纬度列 (lat+lng)")
+        return ChartResult(warnings=warnings)
+
+    # ── 构建数据 ─────────────────────────────────────────
+    pairs: list = []           # (地名, 数值)
+    extra_coords: list = []    # 需要手动注入的 (地名, lng, lat)
+
+    from pyecharts.datasets import COORDINATES
+
+    for _, row in df.iterrows():
+        try:
+            val = float(row[_value])
+        except Exception:
+            warnings.append(f"数值解析失败: {row[_value]}")
+            continue
+
+        if _label and _label in df.columns:
+            name = str(row[_label]).strip()
+        else:
+            name = None
+
+        if _lat and _lng:
+            try:
+                lat_v = float(row[_lat])
+                lng_v = float(row[_lng])
+                # 按数值范围修正列名写反
+                if lat_v > 90:
+                    lat_v, lng_v = lng_v, lat_v
+            except Exception:
+                lat_v, lng_v = None, None
+        else:
+            lat_v, lng_v = None, None
+
+        if name:
+            # 检查内置坐标库是否有该地名
+            if name not in COORDINATES:
+                if lat_v is not None and lng_v is not None:
+                    extra_coords.append((name, lng_v, lat_v))
+                else:
+                    warnings.append(f"坐标库中找不到 [{name}]，且无经纬度数据，已跳过")
+                    continue
+            pairs.append((name, val))
+        elif lat_v is not None and lng_v is not None:
+            # 无地名：用坐标字符串作临时名
+            name = f"{lat_v:.4f},{lng_v:.4f}"
+            extra_coords.append((name, lng_v, lat_v))
+            pairs.append((name, val))
+        else:
+            warnings.append(f"行缺少地名和坐标，已跳过")
+
+    if not pairs:
+        warnings.append("没有有效数据点")
+        return ChartResult(warnings=warnings)
+
+    # ── 值域 ─────────────────────────────────────────────
+    vals_only = [v for _, v in pairs]
+    vmin, vmax = min(vals_only), max(vals_only)
+
+    # ── chart_type 映射 ──────────────────────────────────
+    _type_map = {
+        "effectscatter": ChartType.EFFECT_SCATTER,
+        "scatter":       ChartType.SCATTER,
+        "heatmap":       ChartType.HEATMAP,
+    }
+    ct = _type_map.get(chart_type.lower(), ChartType.EFFECT_SCATTER)
+
+    # ── 构建 Geo 图 ──────────────────────────────────────
+    geo = (
+        Geo()
+        .add_schema(
+            maptype=maptype,
+            itemstyle_opts=opts.ItemStyleOpts(color="#1a2b47", border_color="#2e5b8a"),
+        )
+    )
+
+    # 注入额外坐标
+    for name, lng_v, lat_v in extra_coords:
+        geo.add_coordinate(name, lng_v, lat_v)
+
+    geo.add(
+        series_name=_value,
+        data_pair=pairs,
+        type_=ct,
+        symbol_size=symbol_size,
+        blur_size=20,
+        effect_opts=opts.EffectOpts(
+            is_show=True,
+            scale=3.5,
+            color="#00A3E0",
+        ),
+        label_opts=opts.LabelOpts(is_show=False),
+    )
+
+    geo.set_series_opts(
+        label_opts=opts.LabelOpts(is_show=False)
+    )
+
+    geo.set_global_opts(
+        title_opts=opts.TitleOpts(
+            title=title,
+            title_textstyle_opts=opts.TextStyleOpts(
+                color="#003D7A", font_size=18,
+                font_family="Heiti SC, Microsoft YaHei, sans-serif",
+                font_weight="bold",
+            ),
+        ),
+        visualmap_opts=opts.VisualMapOpts(
+            min_=vmin,
+            max_=vmax,
+            is_piecewise=False,
+            range_color=["#B9D6E8", "#7FB5D5", "#0084D1", "#003D7A", "#001F3F"],
+            textstyle_opts=opts.TextStyleOpts(color="#333"),
+            pos_left="left",
+            pos_bottom="20",
+        ),
+        tooltip_opts=opts.TooltipOpts(
+            trigger="item",
+            formatter=f"{{b}}<br/>{_value}: {{c}}",
+        ),
+    )
+
+    # ── 导出 HTML ────────────────────────────────────────
+    raw_html = geo.render_embed()
+
+    # 包装为完整页面（白色背景 + 标题栏）
+    html = f"""<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{title}</title>
+<style>
+* {{ margin: 0; padding: 0; box-sizing: border-box; }}
+html, body {{ width: 100%; height: 100%;
+  font-family: "Heiti SC", "Microsoft YaHei", sans-serif;
+  background: #fff; }}
+#header {{
+  padding: 14px 24px; background: #fff;
+  border-bottom: 1px solid #e8ecf0;
+  box-shadow: 0 1px 4px rgba(0,0,0,.05);
+}}
+#header h1 {{ font-size: 18px; color: #003D7A; font-weight: 700; }}
+#header .sub {{ font-size: 12px; color: #999; margin-top: 3px; }}
+#chart {{ width: 100%; height: calc(100vh - 60px); }}
+</style>
+</head>
+<body>
+<div id="header">
+  <h1>{title}</h1>
+  <div class="sub">共 {len(pairs)} 个数据点 · 字段: {_value} · 类型: {chart_type}</div>
+</div>
+<div id="chart">
+{raw_html}
+</div>
+</body>
+</html>"""
+
+    meta = {
+        "chart_id": "choropleth_map",
+        "n_rows": len(df),
+        "n_points": len(pairs),
+        "label_col": _label,
+        "value_col": _value,
+        "lat_col": _lat,
+        "lng_col": _lng,
+        "maptype": maptype,
+        "chart_type": chart_type,
+        "extra_coords_injected": len(extra_coords),
+    }
+
+    return ChartResult(html=html, spec={}, warnings=warnings, meta=meta)

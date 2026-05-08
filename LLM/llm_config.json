@@ -1,0 +1,35 @@
+{
+  "minimax": {
+    "provider": "minimax",
+    "api_key": "sk",
+    "base_url": "https://api.minimax.chat/v1",
+    "model": "MiniMax-M2.7",
+    "enabled": true,
+    "is_custom": false,
+    "context_window": null,
+    "max_output_tokens": null,
+    "enable_thinking": false
+  },
+  "openai": {
+    "provider": "openai",
+    "api_key": "sk",
+    "base_url": "https://api.openai.com/v1",
+    "model": "gpt-4",
+    "enabled": true,
+    "is_custom": false,
+    "context_window": null,
+    "max_output_tokens": null,
+    "enable_thinking": false
+  },
+  "deepseek": {
+    "provider": "deepseek",
+    "api_key": "sk",
+    "base_url": "https://api.deepseek.com",
+    "model": "deepseek-v4-flash",
+    "enabled": true,
+    "is_custom": false,
+    "context_window": 1000000,
+    "max_output_tokens": 384000,
+    "enable_thinking": true
+  }
+}

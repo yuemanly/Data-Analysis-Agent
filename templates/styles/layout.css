@@ -1,0 +1,461 @@
+/* ============================================================
+   layout.css - 应用布局样式
+   ============================================================ */
+
+/* ========== 主容器 ========== */
+
+body {
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+}
+
+#app {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  background: var(--color-bg-secondary);
+}
+
+.app-header {
+  flex-shrink: 0;
+  padding: var(--spacing-lg);
+  background: white;
+  border-bottom: 1px solid var(--color-border-light);
+  box-shadow: var(--shadow-sm);
+}
+
+.app-header h1 {
+  font-size: var(--font-size-xl);
+  color: var(--color-primary-dark);
+  margin: 0;
+  font-weight: 600;
+}
+
+.app-header p {
+  margin: var(--spacing-sm) 0 0 0;
+  color: var(--color-text-tertiary);
+  font-size: var(--font-size-sm);
+}
+
+.app-content {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+  gap: 0;
+}
+
+/* ========== 左侧栏 ========== */
+
+.left-column {
+  width: 35%;
+  background: white;
+  border-right: 1px solid var(--color-border-light);
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: var(--spacing-lg);
+  flex-shrink: 0;
+}
+
+.left-column::-webkit-scrollbar {
+  width: 6px;
+}
+
+.left-column::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.left-column::-webkit-scrollbar-thumb {
+  background: #ccc;
+  border-radius: 3px;
+}
+
+.left-column::-webkit-scrollbar-thumb:hover {
+  background: #999;
+}
+
+/* ========== 右侧栏 ========== */
+
+.right-column {
+  flex: 1;
+  background: var(--color-bg-secondary);
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: var(--spacing-lg);
+}
+
+.right-column::-webkit-scrollbar {
+  width: 6px;
+}
+
+.right-column::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.right-column::-webkit-scrollbar-thumb {
+  background: #ccc;
+  border-radius: 3px;
+}
+
+.right-column::-webkit-scrollbar-thumb:hover {
+  background: #999;
+}
+
+/* ========== 面板 ========== */
+
+.panel {
+  background: white;
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+  margin-bottom: var(--spacing-lg);
+  overflow: hidden;
+  transition: box-shadow var(--transition-normal);
+}
+
+.panel:hover {
+  box-shadow: var(--shadow-lg);
+}
+
+.panel:last-child {
+  margin-bottom: 0;
+}
+
+.panel h2 {
+  font-size: var(--font-size-lg);
+  font-weight: 600;
+  padding: var(--spacing-lg);
+  border-bottom: 1px solid var(--color-border-light);
+  margin: 0;
+  background: var(--color-bg-secondary);
+  color: var(--color-text-primary);
+}
+
+.panel-body {
+  padding: var(--spacing-lg);
+}
+
+/* ========== 设置行 ========== */
+
+.settings {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+}
+
+.setting-row {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+}
+
+.setting-row label {
+  font-weight: 500;
+  color: var(--color-text-primary);
+  font-size: var(--font-size-base);
+}
+
+.setting-row input,
+.setting-row select,
+.setting-row textarea {
+  width: 100%;
+  padding: var(--spacing-md);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-base);
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.setting-row input:focus,
+.setting-row select:focus,
+.setting-row textarea:focus {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px rgba(0, 132, 209, 0.1);
+}
+
+/* ========== 图表卡片 ========== */
+
+.chart-category-title {
+  font-weight: 600;
+  color: var(--color-text-primary);
+  margin-top: var(--spacing-lg);
+  margin-bottom: var(--spacing-md);
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  font-size: var(--font-size-md);
+}
+
+.chart-category-title:first-child {
+  margin-top: 0;
+}
+
+.chart-category-title .count {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-tertiary);
+  font-weight: normal;
+  background: var(--color-bg-tertiary);
+  padding: 2px 6px;
+  border-radius: 12px;
+}
+
+.chart-cards-wrap {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  gap: var(--spacing-md);
+  margin-bottom: var(--spacing-lg);
+}
+
+.chart-card {
+  padding: var(--spacing-md);
+  background: var(--color-bg-tertiary);
+  border: 2px solid transparent;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: all var(--transition-normal);
+  text-align: center;
+  font-size: var(--font-size-sm);
+  line-height: var(--line-height-tight);
+  user-select: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 80px;
+  word-break: break-word;
+}
+
+.chart-card:hover {
+  background: var(--color-bg-secondary);
+  border-color: var(--color-primary-light);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+
+.chart-card:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+.chart-card.selected {
+  background: var(--color-primary-light);
+  color: white;
+  border-color: var(--color-primary-dark);
+  font-weight: 600;
+}
+
+/* ========== 聊天 ========== */
+
+.chat-messages {
+  height: 300px;
+  overflow-y: auto;
+  background: var(--color-bg-tertiary);
+  border-radius: var(--radius-md);
+  padding: var(--spacing-md);
+  margin-bottom: var(--spacing-md);
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+}
+
+.chat-messages::-webkit-scrollbar {
+  width: 6px;
+}
+
+.chat-messages::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.chat-messages::-webkit-scrollbar-thumb {
+  background: #ccc;
+  border-radius: 3px;
+}
+
+.chat-message {
+  padding: var(--spacing-md);
+  border-radius: var(--radius-md);
+  word-wrap: break-word;
+  white-space: pre-wrap;
+  font-size: var(--font-size-sm);
+  line-height: var(--line-height-normal);
+}
+
+.chat-message-user {
+  background: var(--color-primary);
+  color: white;
+  margin-left: var(--spacing-lg);
+  text-align: right;
+  align-self: flex-end;
+  max-width: 80%;
+}
+
+.chat-message-bot {
+  background: white;
+  color: var(--color-text-primary);
+  margin-right: var(--spacing-lg);
+  border: 1px solid var(--color-border-light);
+  align-self: flex-start;
+  max-width: 80%;
+}
+
+.chat-input-area {
+  display: flex;
+  gap: var(--spacing-sm);
+}
+
+.chat-input-area input {
+  flex: 1;
+  padding: var(--spacing-md);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-base);
+}
+
+.chat-input-area input:focus {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px rgba(0, 132, 209, 0.1);
+}
+
+.chat-input-area button {
+  flex-shrink: 0;
+}
+
+/* ========== 上传区 ========== */
+
+.upload-area {
+  border: 2px dashed var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: var(--spacing-xl);
+  text-align: center;
+  cursor: pointer;
+  transition: all var(--transition-normal);
+  background: var(--color-bg-tertiary);
+  user-select: none;
+}
+
+.upload-area:hover {
+  border-color: var(--color-primary);
+  background: #ECF3F9;
+}
+
+.upload-area:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+.upload-area p {
+  margin: 0;
+  color: var(--color-text-secondary);
+}
+
+.upload-area p:first-child {
+  font-size: 32px;
+  margin-bottom: var(--spacing-md);
+}
+
+.upload-area p strong {
+  display: block;
+  margin-bottom: var(--spacing-sm);
+}
+
+#fileInput {
+  display: none;
+}
+
+/* ========== 响应式布局 ========== */
+
+@media (max-width: 1024px) {
+  .left-column {
+    width: 40%;
+  }
+}
+
+@media (max-width: 768px) {
+  #app {
+    flex-direction: column;
+  }
+
+  .app-content {
+    flex-direction: column;
+  }
+
+  .left-column {
+    width: 100%;
+    border-right: none;
+    border-bottom: 1px solid var(--color-border-light);
+    max-height: 50%;
+    padding: var(--spacing-md);
+  }
+
+  .right-column {
+    flex: 1;
+    padding: var(--spacing-md);
+  }
+
+  .chart-cards-wrap {
+    grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+  }
+
+  .chat-messages {
+    height: 200px;
+  }
+
+  .panel {
+    margin-bottom: var(--spacing-md);
+  }
+
+  .panel h2 {
+    padding: var(--spacing-md);
+    font-size: var(--font-size-md);
+  }
+
+  .panel-body {
+    padding: var(--spacing-md);
+  }
+}
+
+@media (max-width: 480px) {
+  .left-column {
+    padding: var(--spacing-sm);
+  }
+
+  .right-column {
+    padding: var(--spacing-sm);
+  }
+
+  .chart-cards-wrap {
+    grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+    gap: var(--spacing-sm);
+  }
+
+  .chat-messages {
+    height: 150px;
+    padding: var(--spacing-sm);
+  }
+
+  .chat-message-user,
+  .chat-message-bot {
+    margin-left: 0;
+    margin-right: 0;
+    max-width: 100%;
+  }
+
+  .panel {
+    margin-bottom: var(--spacing-sm);
+  }
+
+  .panel h2 {
+    padding: var(--spacing-sm);
+    font-size: var(--font-size-base);
+  }
+
+  .panel-body {
+    padding: var(--spacing-sm);
+  }
+
+  .settings {
+    gap: var(--spacing-sm);
+  }
+
+  .setting-row {
+    gap: var(--spacing-xs);
+  }
+}
