@@ -1,6 +1,8 @@
 """Blueprint: system utilities — zip-based auto-update from GitHub."""
 import logging
+import os
 import shutil
+import stat
 import tempfile
 import urllib.request
 import urllib.error
@@ -19,8 +21,8 @@ PROJECT_ROOT = Path(__file__).parent.parent
 
 # GitHub archive URL (no git required — works for zip installs too)
 ARCHIVE_URL = "https://github.com/Zafer-Liu/Data-Analysis-Agent/archive/refs/heads/main.zip"
-# The prefix inside the zip (GitHub always uses {repo}-{branch}/)
-ZIP_PREFIX = "Data-Analysis-Agent/"
+# The prefix inside the zip: GitHub always uses {repo}-{branch}/
+ZIP_PREFIX = "Data-Analysis-Agent-main/"
 
 # Paths (relative to project root) that must NEVER be overwritten during update
 # — user data, local config, runtime outputs
@@ -48,6 +50,26 @@ def _is_protected(rel: Path) -> bool:
     return False
 
 
+def _rmtree_safe(path: str) -> None:
+    """
+    Best-effort recursive delete — tolerates locked files on Windows.
+
+    On Windows, antivirus scanners and Flask's file-watcher can briefly lock
+    newly-extracted files (e.g. result.html in chart directories), causing
+    shutil.rmtree to raise PermissionError (WinError 32).  We handle this by
+    trying to remove the read-only bit and retrying; if the file is still
+    locked we simply skip it — the OS will reclaim the temp space eventually.
+    """
+    def _onerror(func, p, exc_info):
+        try:
+            os.chmod(p, stat.S_IWRITE)
+            func(p)
+        except Exception:
+            pass  # give up gracefully — temp dir, not critical
+
+    shutil.rmtree(path, onerror=_onerror)
+
+
 def _download_zip(url: str, dest: Path, timeout: int = 90) -> None:
     """Download *url* to *dest* with a progress-friendly timeout."""
     req = urllib.request.Request(url, headers={"User-Agent": "Data-Analysis-Agent/1.0"})
@@ -68,7 +90,9 @@ def _apply_update(zip_path: Path) -> Tuple[List[str], List[str], List[str]]:
     """
     updated, added, skipped = [], [], []
 
-    with tempfile.TemporaryDirectory() as tmp_dir:
+    # Use mkdtemp + manual cleanup so _rmtree_safe handles Windows file locks.
+    tmp_dir = tempfile.mkdtemp()
+    try:
         tmp = Path(tmp_dir)
 
         # Extract the zip
@@ -112,6 +136,9 @@ def _apply_update(zip_path: Path) -> Tuple[List[str], List[str], List[str]]:
                 dst_file.write_bytes(new_bytes)
                 added.append(str(rel))
 
+    finally:
+        _rmtree_safe(tmp_dir)
+
     return updated, added, skipped
 
 
@@ -127,7 +154,9 @@ def zip_update():
     """
     log.info("[update] downloading archive from %s", ARCHIVE_URL)
 
-    with tempfile.TemporaryDirectory() as tmp_dir:
+    # Use mkdtemp + manual cleanup so _rmtree_safe handles Windows file locks.
+    tmp_dir = tempfile.mkdtemp()
+    try:
         zip_path = Path(tmp_dir) / "update.zip"
 
         # ── Step 1: Download ──────────────────────────────────────────────
@@ -153,6 +182,9 @@ def zip_update():
             log.error("[update] %s", exc)
             return jsonify({"ok": False, "output": msg, "already_up_to_date": False,
                             "updated": [], "added": [], "skipped": []})
+
+    finally:
+        _rmtree_safe(tmp_dir)
 
     already = len(updated) == 0 and len(added) == 0
 
