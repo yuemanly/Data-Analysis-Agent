@@ -109,11 +109,12 @@ Also supports any **OpenAI SDK compatible API** via custom:
 ### Data Preview
 ![Data Preview](Images/Data_preview.png)
 
+---
+
 ### Data Query
 ![Data Query](Images/Data_query.png)
 
-### Custom Model
-![Custom Model](Images/Custom_model.png)
+---
 
 ### Auto Generated Chart
 ![Auto Generated](Images/Auto_generated_image.png)

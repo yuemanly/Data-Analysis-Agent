@@ -153,12 +153,6 @@ Business Analyst Agent 是一个对话式商业数据分析系统，目标是让
 
 ---
 
-## Data Query
-
-![Data Query](Images/Data_query.png)
-
----
-
 ## Custom Model
 
 ![Custom Model](Images/Custom_model.png)
