@@ -1,5 +1,8 @@
 """Blueprint: data source management — upload Excel/CSV, connect SQL DB."""
+import logging
+import traceback
 import uuid
+import os
 from pathlib import Path
 
 from flask import Blueprint, request, jsonify
@@ -7,8 +10,8 @@ from werkzeug.utils import secure_filename
 
 from .state import session_manager
 from data.connector import ExcelDataSource, CSVDataSource, SQLDataSource
-import os
-from pathlib import Path
+
+log = logging.getLogger(__name__)
 
 bp = Blueprint("datasource", __name__)
 
@@ -41,17 +44,25 @@ def upload_file(sid: str):
     save_path = UPLOAD_DIR / f"{sid[:8]}_{uuid.uuid4().hex[:6]}_{safe_name}"
     f.save(str(save_path))
 
+    log.info("[upload] saved → %s  (display: %s)", save_path, display_name)
+
     try:
+        log.info("[upload] building DataSource …")
         if ext == ".csv":
             source = CSVDataSource(str(save_path), display_name)
         else:
             source = ExcelDataSource(str(save_path), display_name)
 
+        log.info("[upload] DataSource ready, fetching schema …")
+        schema = source.get_schema()
+        log.info("[upload] schema OK:\n%s", schema)
+
         sess = session_manager.get_or_create(sid)
         sess.data_source = source
         return jsonify({"ok": True, "source_name": display_name,
-                        "schema_preview": source.get_schema()})
+                        "schema_preview": schema})
     except Exception as exc:
+        log.error("[upload] FAILED: %s\n%s", exc, traceback.format_exc())
         return jsonify({"error": f"文件解析失败: {exc}"}), 400
 
 

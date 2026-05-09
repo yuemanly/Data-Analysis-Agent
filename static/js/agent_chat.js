@@ -163,10 +163,12 @@ async function onModelChange() {
 }
 
 // ── Settings modal ─────────────────────────────────────────────────
+const COMMON_ICON = "/static/Images/icon.png";
+
 const BUILTIN_META = {
-  deepseek: { label: "DeepSeek",        icon: "🤖" },
-  openai:   { label: "OpenAI / ChatGPT", icon: "🟢" },
-  claude:   { label: "Anthropic Claude", icon: "🟣" },
+  deepseek: { label: "DeepSeek", icon: COMMON_ICON },
+  openai:   { label: "OpenAI / ChatGPT", icon: COMMON_ICON },
+  claude:   { label: "Anthropic Claude", icon: COMMON_ICON },
 };
 
 async function loadBuiltinProviders() {
@@ -183,13 +185,13 @@ function renderBuiltinProviders(configs, defaults) {
   const container = document.getElementById("builtin-providers");
   container.innerHTML = "";
   for (const [key, def] of Object.entries(defaults)) {
-    const meta = BUILTIN_META[key] || { label: key, icon: "🔧" };
+    const meta = BUILTIN_META[key] || { label: key, icon: "/Images/icon.png" };
     const cfg  = configs[key] || {};
     const hasKey = cfg.has_api_key;
     container.innerHTML += `
       <div class="provider-card">
         <div class="provider-head">
-          <span class="provider-icon">${meta.icon}</span>
+          <img class="provider-icon" src="${meta.icon}" alt="${meta.label}">
           <span class="provider-name">${meta.label}</span>
           <span class="provider-status ${hasKey ? "set" : "unset"}" id="ps-${key}">
             ${hasKey ? "已配置" : "未配置"}
@@ -611,8 +613,15 @@ function appendMsg(role, text) {
   const msgs = document.getElementById("messages");
   const div = document.createElement("div");
   div.className = `msg ${role}`;
+
+  // 你可以根据当前模型/供应商动态决定图标
+  // 这里先给一个默认机器人图标路径（按你的实际静态目录改）
+  const assistantAvatar = `<img class="assistant-avatar-img" src="/static/Images/icon.png" alt="AI">`;
+
   div.innerHTML = `
-    <div class="msg-avatar">${role === "user" ? "👤" : "🤖"}</div>
+    <div class="msg-avatar">
+      ${role === "user" ? "👤" : assistantAvatar}
+    </div>
     <div class="msg-body">
       <div class="tool-steps"></div>
       <div class="msg-bubble">${text !== null ? renderMd(text) : ""}</div>

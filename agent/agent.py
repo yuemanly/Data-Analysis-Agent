@@ -56,6 +56,41 @@ AGENT_TOOLS = [
     {
         "type": "function",
         "function": {
+            "name": "create_analysis_table",
+            "description": (
+                "Extract specific fields from the raw data and materialise the result "
+                "as a new queryable table. Use this to: (1) select only the columns "
+                "needed for the current analysis, (2) pre-aggregate or filter large "
+                "datasets before charting, (3) join / reshape data into the exact "
+                "shape a chart requires. The resulting table is immediately available "
+                "to query_data and generate_chart by its table_name."
+            ),
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "sql": {
+                        "type": "string",
+                        "description": (
+                            "SQL SELECT that defines the analysis table — "
+                            "select the exact columns needed, apply WHERE filters, "
+                            "GROUP BY aggregations, JOINs, etc."
+                        ),
+                    },
+                    "table_name": {
+                        "type": "string",
+                        "description": (
+                            "Name for the new temp table (default: 'analysis_data'). "
+                            "Use a descriptive name when creating multiple tables."
+                        ),
+                    },
+                },
+                "required": ["sql"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
             "name": "query_data",
             "description": "Execute a SQL SELECT query and return the results as a table.",
             "parameters": {
@@ -121,6 +156,9 @@ Behaviour rules:
 4. Proactively suggest a relevant chart after answering data questions.
 5. Respond in the same language the user used (Chinese or English).
 6. Format numbers with separators and units where possible (e.g. ¥1,234,567 or 38.5%).
+7. Use create_analysis_table when it genuinely helps: multi-step aggregations, joining sheets,
+   or reshaping data before charting. For simple single-table queries with few columns, write
+   the SQL directly in generate_chart instead — avoid unnecessary extra round-trips.
 
 Complete chart type list (use the exact chart_id shown):
 {_CHART_GUIDE}
@@ -137,7 +175,7 @@ field_mapping key rules (use the required_roles from each chart's description):
 
 
 class BusinessAgent:
-    MAX_ITERATIONS = 8
+    MAX_ITERATIONS = 100
 
     def __init__(self, client, model: str, data_source=None, enable_thinking: bool = False):
         self.client = client
@@ -167,6 +205,14 @@ class BusinessAgent:
             return f"SQL Error: {error}"
         return self.data_source.format_result(df)
 
+    def _tool_create_analysis_table(self, sql: str, table_name: str = "analysis_data") -> str:
+        if not self.data_source:
+            return "No data source connected."
+        result = self.data_source.create_analysis_table(sql, table_name)
+        # Invalidate schema cache so the new table shows up in get_schema
+        self._schema_cache = None
+        return result
+
     def _tool_generate_chart(
         self, chart_type: str, sql: str, field_mapping: dict, title: str = ""
     ) -> dict:
@@ -180,7 +226,6 @@ class BusinessAgent:
 
         from chart_generate import generate_chart as _gen
 
-        df = df.head(5000)
         options = {"title": title} if title else {}
         result = _gen(df=df, chart_type=chart_type, mapping=field_mapping, options=options)
 
@@ -314,9 +359,10 @@ class BusinessAgent:
                         args = {}
 
                     display_map = {
-                        "get_schema": "读取数据结构...",
-                        "query_data": f"执行查询: {args.get('sql', '')[:60]}...",
-                        "generate_chart": f"生成 {args.get('chart_type', '?')} 图表...",
+                        "get_schema":            "读取数据结构...",
+                        "create_analysis_table": f"提取字段 → {args.get('table_name', 'analysis_data')}...",
+                        "query_data":            f"执行查询: {args.get('sql', '')[:60]}...",
+                        "generate_chart":        f"生成 {args.get('chart_type', '?')} 图表...",
                     }
                     yield {
                         "type": "tool_start",
@@ -326,6 +372,11 @@ class BusinessAgent:
 
                     if name == "get_schema":
                         tool_result = self._tool_get_schema()
+                    elif name == "create_analysis_table":
+                        tool_result = self._tool_create_analysis_table(
+                            sql=args.get("sql", ""),
+                            table_name=args.get("table_name", "analysis_data"),
+                        )
                     elif name == "query_data":
                         tool_result = self._tool_query_data(args.get("sql", ""))
                     elif name == "generate_chart":
