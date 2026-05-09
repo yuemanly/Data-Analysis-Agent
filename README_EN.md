@@ -6,43 +6,105 @@
 
 </div>
 
-[![Python](https://img.shields.io/badge/Python-3.8%2B-blue.svg)](#)
-[![Flask](https://img.shields.io/badge/Backend-Flask-black.svg)](#)
-[![Plotly](https://img.shields.io/badge/Visualization-Plotly-3F4F75.svg)](#)
-[![LLM](https://img.shields.io/badge/LLM-OpenAI%20Compatible-green.svg)](#)
-[![Charts](https://img.shields.io/badge/Charts-43_Types-orange.svg)](#)
-[![License](https://img.shields.io/badge/License-Apache%202.0-yellow.svg)](LICENSE)
+![Python](https://img.shields.io/badge/Python-3.8%2B-blue.svg)
+![Flask](https://img.shields.io/badge/Backend-Flask-black.svg)
+![Plotly](https://img.shields.io/badge/Visualization-Plotly-3F4F75.svg)
+![LLM](https://img.shields.io/badge/LLM-OpenAI%20Compatible-green.svg)
+![Charts](https://img.shields.io/badge/Charts-43_Types-orange.svg)
+![License](https://img.shields.io/badge/License-Apache%202.0-yellow.svg)
 
-> An AI agent for business analytics: connect your data source, ask in natural language, and it automatically performs SQL querying, chart generation, and insight delivery.
-
----
-
-## Introduction
-
-**Business Analyst Agent** is a conversational analytics system for business scenarios.  
-You can upload Excel/CSV files or connect SQL databases (MySQL/PostgreSQL/SQLite/SQL Server), then ask questions in plain language. The agent will automatically:
-
-1. Understand data schema
-2. Generate and execute SQL
-3. Select and render charts (43 chart types)
-4. Output concise business insights
-
-The backend streams the process via **SSE**, so users can see each step in real time (schema → query → chart).
+> An AI Agent built for business analytics.  
+> After connecting to a data source, users can ask questions in natural language and the system will automatically:
+>
+> - Detect schema
+> - Generate & run SQL
+> - Generate charts
+> - Produce concise business insights
 
 ---
 
-## Features
+## ✨ Overview
 
-- **Natural-language analytics** (no manual SQL required)
-- **Multiple data sources**: Excel / CSV / MySQL / PostgreSQL / SQLite / SQL Server
-- **Smart chart recommendation** with 43 chart types
-- **SSE real-time feedback** for transparent tool execution
-- **Configurable model providers**: DeepSeek / OpenAI / Claude / any OpenAI-compatible API
-- **Slash commands**: `/chart` (chart-first), `/sql` (direct SQL execution)
+**Business Analyst Agent** is a conversational business data analysis system.  
+Upload an Excel/CSV file or connect to a database, then ask questions like chatting:
+
+```text
+How does sales trend over the last 3 months?
+Which region has the highest profit?
+Generate a user growth chart.
+```
+
+The system will automatically:
+
+1. Understand intent
+2. Inspect data schema
+3. Generate SQL
+4. Execute queries
+5. Recommend appropriate charts
+6. Summarize insights
+
+It also supports **SSE (Server-Sent Events)** streaming so you can see the analysis progress in real time.
 
 ---
 
-## Screenshots
+## 🚀 Key Features
+
+### 🧠 Natural Language Analytics
+No need to write SQL manually. The agent turns plain language into SQL + results + insights.
+
+### 🔌 Multiple Data Sources
+Supported:
+
+- Excel
+- CSV
+- SQLite
+- MySQL
+- PostgreSQL
+- SQL Server
+
+Planned:
+
+- DuckDB
+- Spark
+
+### 📊 Smart Chart Recommendation (43 Types)
+Built-in support for **43 chart types**, covering:
+
+- Comparing
+- Time / Trend
+- Distribution
+- Relationship
+- Part-to-Whole
+- Geospatial
+
+The agent selects charts automatically based on the query result.
+
+### ⚡ SSE Real-time Feedback
+Streaming progress like:
+
+```text
+[1/4] Reading schema...
+[2/4] Generating SQL...
+[3/4] Running query...
+[4/4] Creating chart & insights...
+```
+
+### 🤖 Configurable LLM Providers
+Built-in support:
+
+- **DeepSeek** (default: `deepseek-chat`)
+- **OpenAI** (default: `gpt-4o-mini`)
+- **Anthropic Claude** (default: `claude-3-5-haiku-20241022`)
+
+Also supports any **OpenAI SDK compatible API** via custom:
+
+- `base_url`
+- `model`
+- `api_key`
+
+---
+
+## 🖼️ UI Preview
 
 ### Data Preview
 ![Data Preview](Images/Data_preview.png)
@@ -53,19 +115,121 @@ The backend streams the process via **SSE**, so users can see each step in real 
 ### Custom Model
 ![Custom Model](Images/Custom_model.png)
 
-### Auto Generated Image
+### Auto Generated Chart
 ![Auto Generated](Images/Auto_generated_image.png)
 
 ---
 
-## Quick Start
+## 📦 Quick Start
 
 ### Requirements
 - Python 3.8+
-- Windows (`start.bat` one-click startup provided)
+- Windows (one-click startup supported via `start.bat`)
 
 ### Install & Run
 
-**Option 1: One-click on Windows (recommended)**
+#### Option 1: Windows One-click Start (Recommended)
 ```bash
 start.bat
+```
+
+#### Option 2: Manual Start
+```bash
+pip install -r requirements.txt
+python app.py
+```
+
+### Open in Browser
+```text
+http://localhost:5001
+```
+
+---
+
+## 🛠 Slash Commands
+
+| Command | Status | Description |
+|---|---|---|
+| `/chart` | ✅ | Prefer chart generation |
+| `/sql` | ✅ | Execute SQL directly and return a table |
+| `/analyze` | 🔲 | Advanced statistical analysis (WIP) |
+| `/report` | 🔲 | Export Word/PDF report (WIP) |
+
+---
+
+## 📁 Suggested Project Structure
+
+```text
+Business-Analyst-Agent/
+│
+├── app.py
+├── requirements.txt
+├── start.bat
+│
+├── Function/
+│   ├── Charts_generation/
+│   │   ├── charts/
+│   │   └── registry.py
+│   ├── SQL/
+│   ├── LLM/
+│   └── DataSource/
+│
+├── Images/
+└── README.md
+```
+
+---
+
+## ⚙️ Configuration
+
+### LLM Setup
+If you see “LLM not configured”, open the sidebar ⚙ and fill in:
+
+- API Key
+- Base URL (optional)
+- Model
+
+Save to apply.
+
+### Adding New Chart Types
+1. Add a new chart folder under:
+   ```text
+   Function/Charts_generation/charts/
+   ```
+2. Register it in:
+   ```python
+   Function/Charts_generation/registry.py
+   ```
+3. Restart the app.
+
+---
+
+## 🗺️ Roadmap
+
+- ✅ Phase 1: Conversational analytics + multi data sources + 43 charts + SSE streaming
+- 🔲 Phase 2: Drag-and-drop dashboards
+- 🔲 Phase 3: `/report` automated report export (Word/PDF)
+- 🔲 Phase 4: DuckDB / Spark support for big data
+
+---
+
+## ❓ FAQ
+
+**Q: It says LLM is not configured.**  
+A: Fill in your API key in the sidebar ⚙ and save.
+
+**Q: Chart links disappear after restart.**  
+A: Charts are currently stored in memory. Restarting the service clears them. Persistence will be added later.
+
+**Q: How do I add a new chart type?**  
+A: Add it under `Function/Charts_generation/charts/` and register it in `registry.py`, then restart.
+
+---
+
+## 📄 License
+Apache License 2.0
+
+---
+
+## ⭐ Goal
+Make business analytics as easy as chatting.
