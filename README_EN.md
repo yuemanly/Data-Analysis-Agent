@@ -295,7 +295,7 @@ Save to apply.
 A: Fill in your API key in the sidebar ⚙ and save.
 
 **Q: Chart links disappear after restart.**  
-A: Charts are currently stored in memory. Restarting the service clears them. Persistence will be added later.
+A: The generated charts are stored in the local directory \outputs\charts.
 
 **Q: How to Obtain an API Key?**
 Here is an example using Deepseek. The steps are as follows:

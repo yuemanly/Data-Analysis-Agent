@@ -381,19 +381,15 @@ Model
 
 ## Q：提示未配置 LLM？
 
-在侧栏 ⚙ 中填写 API Key 并保存。
+A: 在侧栏 ⚙ 中填写 API Key 并保存。
 
----
 
 ## Q：图表链接重启后失效？
 
-当前图表 HTML 存储于内存中，服务重启后需要重新生成。  
-后续会加入持久化存储。
-
----
+A: 生成的图表储存在本地内容*\outputs\charts目录下
 
 ## Q：如何获取API Key？
-这里以Deepseek为例，步骤如下：
+A: 这里以Deepseek为例，步骤如下：
 
 ![Configure the API1](Images/Deepseek1.png)
 
