@@ -256,14 +256,23 @@ http://localhost:5001
 ```
 ---
 
-# 🛠 Slash Commands
+# 🛠 斜杠命令 
 
 | Command | Status | Description |
 |---|---|---|
 | `/chart` | ✅ | 强制优先生成图表 |
 | `/sql` | ✅ | 直接执行 SQL |
-| `/analyze` | 🔲 | 深度统计分析（开发中） |
-| `/report` | 🔲 | 导出 Word/PDF 报告（开发中） |
+| `/analyze` | ✅ | 深度统计分析 |
+| `/tree` | ✅ | 决策树分析 |
+| `/kmeans` | ✅ | K-Means 聚类分析 |
+| `/data` | ✅ | 数据探查与预览 |
+| `/inset` | ✅ | 缺失值插补处理 |
+| `/winsorize` | ✅ | 缩尾处理（极值替换） |
+| `/trimming` | ✅ | 截尾处理（极值剔除） |
+| `/export` | ✅ | 导出数据文件 |
+| `/report` | ✅ | 导出 Word/PDF 报告 |
+| `/ppt` | ✅ | 导出 PPT 演示文稿 |
+| `/status` | ✅ | 查看任务状态 |
 
 ---
 
@@ -402,21 +411,14 @@ registry.py
 
 ---
 
-## Q：如何新增图表类型？
+## Q：如何获取API Key？
+这里以Deepseek为例，步骤如下：
 
-在：
+![Configure the API1](Images/Deepseek1.png)
 
-```text
-Function/Charts_generation/charts/
-```
+![Configure the API2](Images/Deepseek2.png)
 
-新增图表实现，并在：
-
-```python
-registry.py
-```
-
-中注册即可。
+![Configure the API3](Images/Deepseek3.png)
 
 ---
 

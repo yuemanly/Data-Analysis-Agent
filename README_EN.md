@@ -217,15 +217,23 @@ http://localhost:5001
 
 ---
 
-## 🛠 Slash Commands
+# 🛠 Slash Commands
 
 | Command | Status | Description |
 |---|---|---|
-| `/chart` | ✅ | Prefer chart generation |
-| `/sql` | ✅ | Execute SQL directly and return a table |
-| `/analyze` | 🔲 | Advanced statistical analysis (WIP) |
-| `/report` | 🔲 | Export Word/PDF report (WIP) |
-
+| `/chart` | ✅ | 强制优先生成图表 |
+| `/sql` | ✅ | 直接执行 SQL |
+| `/analyze` | ✅ | 深度统计分析 |
+| `/tree` | ✅ | 决策树分析 |
+| `/kmeans` | ✅ | K-Means 聚类分析 |
+| `/data` | ✅ | 数据探查与预览 |
+| `/inset` | ✅ | 缺失值插补处理 |
+| `/winsorize` | ✅ | 缩尾处理（极值替换） |
+| `/trimming` | ✅ | 截尾处理（极值剔除） |
+| `/export` | ✅ | 导出数据文件 |
+| `/report` | ✅ | 导出 Word/PDF 报告 |
+| `/ppt` | ✅ | 导出 PPT 演示文稿 |
+| `/status` | ✅ | 查看任务状态 |
 ---
 
 ## 📁 Suggested Project Structure
@@ -298,8 +306,14 @@ A: Fill in your API key in the sidebar ⚙ and save.
 **Q: Chart links disappear after restart.**  
 A: Charts are currently stored in memory. Restarting the service clears them. Persistence will be added later.
 
-**Q: How do I add a new chart type?**  
-A: Add it under `Function/Charts_generation/charts/` and register it in `registry.py`, then restart.
+**Q: How to Obtain an API Key?**
+Here is an example using Deepseek. The steps are as follows:
+
+![Configure the API1](Images/Deepseek1.png)
+
+![Configure the API2](Images/Deepseek2.png)
+
+![Configure the API3](Images/Deepseek3.png)
 
 ---
 
