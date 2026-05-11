@@ -134,8 +134,13 @@ Also supports any **OpenAI SDK compatible API** via custom:
 ```bat
 start.bat
 ```
+Note: The first startup of start.bat will automatically configure the running environment, which may take a long time. Subsequent runs will not require waiting.
 
-> Note: This option requires Python to be installed and dependencies to be available on your machine (or `start.bat` already handles dependency installation).
+#### 3) Open `http://localhost:5001` in your browser
+
+This is a local address and will not leak any information. Please use it with confidence.
+
+![Download installation package2](Images/package2.png)
 
 ---
 

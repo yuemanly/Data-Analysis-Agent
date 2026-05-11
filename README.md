@@ -175,8 +175,13 @@ Business Analyst Agent 是一个对话式商业数据分析系统，目标是让
 ```bat
 start.bat
 ```
+注：首次启动start.bat会自动配置运行环境，时间可能较长，后续再次运行就无需等待
 
-> 说明：该方式依赖你本机已配置好 Python 环境并安装好依赖（或 `start.bat` 内部已处理依赖安装）。
+#### 3) 浏览器打开`http://localhost:5001`
+
+此地址为本地地址，不会泄露信息，请放心使用
+
+![Download installation package2](Images/package2.png)
 
 ---
 ### 方式 2：一键安装 + 启动（还在测试，不稳定）
