@@ -166,7 +166,7 @@ start.bat
 **① Windows:**
 Navigate to the project directory (or hold Shift + right-click inside the project folder to open PowerShell):
 ```bash
-cd Data-Analysis-Agent
+cd \Data-Analysis-Agent (Replace with your actual path)
 ```
 
 Install dependencies:

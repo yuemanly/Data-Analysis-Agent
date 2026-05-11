@@ -197,7 +197,7 @@ start.bat
 
 进入项目目录（也可以直接在项目目录按住Shift右键打开Powershell）
 ```bash
-cd Data-Analysis-Agent
+cd \Data-Analysis-Agent（替换为你的真实路径）
 ```
 
 安装依赖
