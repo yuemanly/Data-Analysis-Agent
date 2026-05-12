@@ -1,9 +1,9 @@
 {
-  "minimax": {
-    "provider": "minimax",
+  "claude": {
+    "provider": "anthropic",
     "api_key": "sk",
-    "base_url": "https://api.minimax.chat/v1",
-    "model": "MiniMax-M2.7",
+    "base_url": "https://api.anthropic.com",
+    "model": "claude-3-5-sonnet-20240620",
     "enabled": true,
     "is_custom": true,
     "context_window": null,

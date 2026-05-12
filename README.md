@@ -22,8 +22,36 @@
 > - 业务洞察分析
 
 ---
+# 目录
 
-
+- [✨ 项目亮点](#-项目亮点)
+- [🧠 核心能力](#-核心能力)
+  - [1️⃣ 自然语言数据分析](#1️⃣-自然语言数据分析)
+  - [2️⃣ 多数据源支持](#2️⃣-多数据源支持)
+  - [3️⃣ 智能图表系统](#3️⃣-智能图表系统)
+  - [4️⃣ SSE 流式分析体验](#4️⃣-sse-流式分析体验)
+  - [5️⃣ 多模型兼容](#5️⃣-多模型兼容)
+- [⚙️ 安装方式](#⚙️安装方式)
+  - [方式 1：安装包下载（推荐）](#方式-1安装包下载推荐)
+  - [方式 2：一键安装 + 启动（还在测试，不稳定）](#方式-2一键安装--启动还在测试不稳定)
+  - [方式 3：通过 GitHub 安装（命令行）](#方式-3通过-github-安装命令行)
+- [🛠 斜杠命令](#-斜杠命令)
+- [📈 使用示例](#-使用示例)
+  - [示例 1：趋势分析](#示例-1趋势分析)
+  - [示例 2：区域分析](#示例-2区域分析)
+  - [示例 3：图表优先模式](#示例-3图表优先模式)
+- [⚙️ 配置说明](#⚙️-配置说明)
+  - [LLM 配置](#llm-配置)
+- [🗺️ 项目里程碑](#️-项目里程碑)
+  - [版本更新日志](#版本更新日志)
+  - [Phase 1（当前）](#phase-1当前)
+  - [Phase 2](#phase-2)
+  - [Phase 3](#phase-3)
+  - [Phase 4](#phase-4)
+- [❓ FAQ](#-faq)
+- [📄 License](#-license)
+- [⭐ 项目目标](#-项目目标)
+---
 # ✨ 项目亮点
 
 Business Analyst Agent 是一个对话式商业数据分析系统，目标是让非技术用户也能像“聊天”一样完成数据分析。
@@ -69,6 +97,8 @@ Business Analyst Agent 是一个对话式商业数据分析系统，目标是让
 - 图表推荐
 - 分析总结
 
+![Data Query](Images/Data_query.png)
+
 ---
 
 ## 2️⃣ 多数据源支持
@@ -78,6 +108,8 @@ Business Analyst Agent 是一个对话式商业数据分析系统，目标是让
 - 文件：Excel / CSV
 - 数据库：SQLite、MySQL、PostgreSQL、SQL Server
 - 未来计划：DuckDB、Spark
+
+![Data Preview](Images/Data_preview.png)
 
 ---
 
@@ -93,6 +125,8 @@ Business Analyst Agent 是一个对话式商业数据分析系统，目标是让
 | **占比类** PART-TO-WHOLE | Treemap（矩形树图）、Sunburst_Diagram（旭日图）、Nightingale_Chart（南丁格尔玫瑰图）、Pie_Chart（饼图） |
 
 系统会根据查询结果自动推荐最合适的图表。
+
+![Auto Generated](Images/Auto_generated_image.png)
 
 ---
 
@@ -115,7 +149,6 @@ Business Analyst Agent 是一个对话式商业数据分析系统，目标是让
 ## 5️⃣ 多模型兼容
 
 支持：
-
 - DeepSeek
 - OpenAI
 - Claude
@@ -135,31 +168,21 @@ Business Analyst Agent 是一个对话式商业数据分析系统，目标是让
 | OpenAI | `gpt-4o-mini` |
 | Anthropic | `claude-3-5-haiku-20241022` |
 
----
+## 6️⃣ 报告生成功能
+支持导出：
+- 整理后的Excel表格
+- docx格式报告
+- 内置风格PPT
 
-# 🖼️ 界面预览
-
-### Data Preview
-![Data Preview](Images/Data_preview.png)
-
-
-### Data Query
-![Data Query](Images/Data_query.png)
-
----
-
-### Auto Generated Chart
-![Auto Generated](Images/Auto_generated_image.png)
+![Output](Images/Output.png)
 
 ---
 
 ## ⚙️安装方式
 
-
-
 ### 方式 1：安装包下载（推荐）
 
-#### 1) 下载安装包 
+#### 1) 下载压缩包 
 
 ![Download installation package](Images/package.png)
 
@@ -176,7 +199,7 @@ start.bat
 
 ① 需要使用脚本 `start.command`
 
-② 在终端里赋予执行权限：
+② 在终端（按 Command + 空格，输入 Terminal回车）里赋予执行权限：
    ```bash
    chmod +x start.command
    ```
@@ -190,7 +213,7 @@ start.bat
 
 进入项目目录（也可以直接在项目目录按住Shift右键打开Powershell）
 ```bash
-cd \Data-Analysis-Agent（替换为你的真实路径）
+cd ~/Data-Analysis-Agent（替换为你的真实路径）
 ```
 
 安装依赖
@@ -207,9 +230,9 @@ python app.py
 
 **② Mac**
 
-进入项目目录
+进入项目目录（按 Command + 空格，输入 Terminal回车）
 ```bash
-cd Data-Analysis-Agent
+cd ~/Data-Analysis-Agent（替换为你的真实路径）
 ```
 
 安装依赖
@@ -465,11 +488,6 @@ Model
 
 A: 在侧栏 ⚙ 中填写 API Key 并保存。
 
-
-## Q：图表链接重启后失效？
-
-A: 生成的图表储存在本地内容*\outputs\charts目录下
-
 ## Q：如何获取API Key？
 A: 这里以Deepseek为例，步骤如下：
 
@@ -478,6 +496,12 @@ A: 这里以Deepseek为例，步骤如下：
 ![Configure the API2](Images/Deepseek2.png)
 
 ![Configure the API3](Images/Deepseek3.png)
+
+## Q：图表链接重启后失效？
+
+A: 生成的图表储存在本地内容*\outputs\charts目录下
+
+
 
 ---
 

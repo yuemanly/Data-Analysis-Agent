@@ -22,7 +22,34 @@
 > - Produce concise business insights
 
 ---
+## Table of Contents
 
+- [✨ Overview](#-overview)
+- [🧠 Key Features](#-key-features)
+  - [1️⃣ Natural Language Analytics](#1️⃣-natural-language-analytics)
+  - [2️⃣ Multiple Data Sources](#2️⃣-multiple-data-sources)
+  - [3️⃣ Smart Chart Recommendation](#3️⃣-smart-chart-recommendation)
+  - [4️⃣ SSE Real-time Feedback](#4️⃣-sse-real-time-feedback)
+  - [5️⃣ Configurable LLM Providers](#5️⃣-configurable-llm-providers)
+- [🖼️ UI Preview](#-ui-preview)
+- [Installation](#installation)
+  - [Option 1: Windows One-click Start (Recommended)](#option-1-windows-one-click-start-recommended)
+  - [Option 2: One-Click Install + Launch (Still testing, unstable)](#option-2-one-click-install--launch-still-testing-unstable)
+  - [Method 3: Install via GitHub (Command Line)](#method-3-install-via-github-command-line)
+- [🛠 Slash Commands](#-slash-commands)
+- [📁 Suggested Project Structure](#-suggested-project-structure)
+- [⚙️ Configuration](#-configuration)
+  - [LLM Setup](#llm-setup)
+- [🗺️ Roadmap](#-roadmap)
+  - [Version Development Log](#version-development-log)
+  - [Phase 1](#-phase-1)
+  - [Phase 2](#-phase-2)
+  - [Phase 3](#-phase-3)
+  - [Phase 4](#-phase-4)
+- [❓ FAQ](#-faq)
+- [📄 License](#-license)
+- [⭐ Goal](#-goal)
+---
 ## ✨ Overview
 
 **Business Analyst Agent** is a conversational business data analysis system.  
