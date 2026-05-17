@@ -82,7 +82,7 @@ C:\playwright-test\node_modules\@playwright\mcp\cli.js
 ## 3. MCP 的配置方式
 如图，在配置栏书写下面的内容，点击连接：
 
-![MCP](Images/MCP0.png)
+![MCP](../Images/MCP0.png)
 
 
 
@@ -91,4 +91,4 @@ C:\playwright-test\node_modules\@playwright\mcp\cli.js
 Q：远程MCP如何配置？
 
 A：如下图，按照远程服务器的要求进行填写
-![MCP](Images/MCP3.png)
+![MCP](../Images/MCP3.png)
