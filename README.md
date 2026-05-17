@@ -465,26 +465,6 @@ Model
 - [Version_Update_Log_EN](Information/Version_Update_Log_EN.md)
 
 ---
-
-# ❓ FAQ
-
-## Q：提示未配置 LLM？
-
-A: 在侧栏 ⚙ 中填写 API Key 并保存。
-
-## Q：如何获取API Key？
-A: 这里以Deepseek为例，步骤如下：
-
-![Configure the API1](Images/Deepseek1.png)
-
-![Configure the API2](Images/Deepseek2.png)
-
-![Configure the API3](Images/Deepseek3.png)
-
-## Q：图表链接重启后失效？
-
-A: 生成的图表储存在本地内容*\outputs\charts目录下
-
 ---
 
 # 🚀 寻找一起改变世界的 Contributor
@@ -516,7 +496,34 @@ A: 生成的图表储存在本地内容*\outputs\charts目录下
 
 - 直接 **Pull Request**，我们会在 24 小时内 review
 - 或联系邮箱：`rusboldtshanti34@gmail.com`（请备注“Contributor+擅长方向”）
+---
 
+# ❓ FAQ
+
+## Q：提示未配置 LLM？
+
+A: 在侧栏 ⚙ 中填写 API Key 并保存。
+
+## Q：如何获取API Key？
+A: 这里以Deepseek为例，步骤如下：
+
+![Configure the API1](Images/Deepseek1.png)
+
+![Configure the API2](Images/Deepseek2.png)
+
+![Configure the API3](Images/Deepseek3.png)
+
+## Q：图表链接重启后失效？
+
+A: 生成的图表储存在本地内容*\outputs\charts目录下
+
+
+## Q：如何连接SQL数据库？
+
+A: 请使用下面格式连接 `mysql+pymysql://用户名:密码@主机:端口/数据库名`
+
+- 报错写法：mysql://user:pass@host:3306/dbname 
+- 正确写法：mysql+pymysql://user:pass@host:3306/dbname
 ---
 
 # 📄 License
