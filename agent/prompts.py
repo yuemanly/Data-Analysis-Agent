@@ -21,6 +21,17 @@ if _PPT_PATH not in sys.path:
 
 # ── Guide builders ────────────────────────────────────────────────────────────
 
+def _build_knowledge_summary() -> str:
+    """Load enabled knowledge entries and return a compact summary block.
+    Returns an empty string if the knowledge base is empty or unavailable.
+    """
+    try:
+        from Function.Knowledge.knowledge_base import KnowledgeBase
+        return KnowledgeBase().get_enabled_summary()
+    except Exception:
+        return ""
+
+
 def _build_analyze_guide() -> str:
     try:
         from Function.Analyze.registry import build_agent_desc
@@ -54,11 +65,23 @@ def _build_chart_guide() -> tuple:
 
 _ANALYZE_GUIDE = _build_analyze_guide()
 _CHART_GUIDE, _CHART_IDS = _build_chart_guide()
+_KNOWLEDGE_SUMMARY = _build_knowledge_summary()
 
 
 # ── System prompt ─────────────────────────────────────────────────────────────
 
-SYSTEM_PROMPT = f"""You are a professional business analyst assistant embedded in a data analytics platform.
+def _build_system_prompt() -> str:
+    # Re-read knowledge on every call so toggling entries takes effect immediately
+    try:
+        from Function.Knowledge.knowledge_base import KnowledgeBase
+        kb_summary = KnowledgeBase().get_enabled_summary()
+    except Exception:
+        kb_summary = ""
+    kb_section = f"\n\n{kb_summary}" if kb_summary else ""
+    return _SYSTEM_PROMPT_TEMPLATE + kb_section
+
+
+_SYSTEM_PROMPT_TEMPLATE = f"""You are a professional business analyst assistant embedded in a data analytics platform.
 Your job: help users understand and derive insights from their business data through conversation.
 
 Behaviour rules:
@@ -68,6 +91,13 @@ Behaviour rules:
 4. Proactively suggest a relevant chart after answering data questions.
 5. Respond in the same language the user used (Chinese or English).
 6. Format numbers with separators and units where possible (e.g. ¥1,234,567 or 38.5%).
+6a. OUTPUT FORMAT — STRICT:
+   • NEVER use box-drawing characters (┌ ─ │ ├ └ ┐ ┘ ┤ ┬ ┴ ┼ or any Unicode box art).
+   • Use only standard Markdown: headers (##/###), bullet lists (- or *), numbered lists,
+     bold (**text**), and pipe tables (| col | col |) for tabular data.
+   • For hierarchical information, use nested Markdown lists (indent with 2 spaces), NOT
+     ASCII/Unicode tree art.
+   • For key-value summaries, use a Markdown pipe table or a bold-label bullet list.
 7. Use create_analysis_table when it genuinely helps: multi-step aggregations, joining sheets,
    or reshaping data before charting. For simple single-table queries with few columns, write
    the SQL directly in generate_chart instead — avoid unnecessary extra round-trips.
@@ -104,10 +134,26 @@ field_mapping key rules (use the required_roles from each chart's description):
 - Parallel coordinates: dimensions (list of column names) + optional color
 - Geographic charts: label+value (+ optional category)
 
-9. PPT WORKFLOW: /ppt command → call propose_ppt_outline (NEVER generate_ppt directly).
-   The UI shows the user an editable card with Confirm / Edit / Cancel buttons.
-   generate_ppt is triggered automatically by the system when the user clicks Confirm.
+9. OUTPUT TOOLS — SLASH COMMANDS ONLY (STRICT):
+   propose_ppt_outline, generate_ppt, propose_report_outline, export_report,
+   propose_excel_export, export_excel, propose_dashboard_outline, generate_dashboard
+   → These tools MUST NOT be called unless the user explicitly issued a slash command
+     (/ppt, /report, /export, /dashboard) in the CURRENT turn or an active confirm flow.
+   → NEVER call them proactively, speculatively, or as a "helpful suggestion" after analysis.
+   → If the user asks "can you make a PPT?" in plain chat, reply with text suggesting they
+     use /ppt — do NOT call any of these tools.
+   PPT confirm flow: /ppt → propose_ppt_outline only. generate_ppt is triggered by the
+   system when the user clicks Confirm — never call it directly from a chat message.
+10. KNOWLEDGE BASE: Metric definitions and business rules are pre-loaded above (if any).
+    Use them as ground truth when writing SQL for named metrics.
+    For full sql_template / notes details, call query_knowledge with the metric name.
+    - If query_knowledge returns a result: follow its sql_template exactly.
+    - If empty: proceed with your best judgment and note the assumption.
+    - Skip query_knowledge for purely exploratory queries with no named metric.
 """
+
+# SYSTEM_PROMPT is now a function call so knowledge is refreshed each conversation
+SYSTEM_PROMPT: str = ""  # populated at first use via get_system_prompt()
 
 
 # ── Slash-command → system-hint mapping ──────────────────────────────────────
@@ -309,3 +355,12 @@ COMMAND_HINTS: Dict[str, str] = {
         "Output NOTHING after the tool call."
     ),
 }
+
+
+def get_system_prompt() -> str:
+    """Return SYSTEM_PROMPT with freshly-loaded knowledge base summary.
+
+    Called once per conversation turn in agent.py so that toggling a knowledge
+    entry takes effect on the next message without restarting the server.
+    """
+    return _build_system_prompt()

@@ -70,3 +70,22 @@ This update focuses on **stronger analytical capabilities, more consistent prese
 - Improved interface stability and responsiveness
 
 ---
+## v3.0
+
+This upgrade focuses on external ecosystem integration and enhanced business knowledge capabilities, significantly expanding the Agent’s data acquisition abilities and adaptability to different fields.
+
+### 1. MCP Tool Invocation Capability
+- Added support for the MCP (Model Context Protocol); Agents can now dynamically invoke external MCP tools.
+- Supports the use of calculators, code executors, third-party API wrappers, and other tools to expand analytical capabilities.
+- Through a standardized protocol, any tool that complies with MCP specifications can be integrated.
+- The entire process of tool invocation is automatically logged for easy debugging and auditing.
+
+### 2. Business Knowledge Base Integration
+- Added a business database feature that allows the import of internal company materials, product documentation, industry reports, etc.
+- Materials are automatically processed in a vectorized manner to create a searchable knowledge base.
+- When performing analyses, Agents automatically retrieve relevant information, enhancing their understanding and insight into specific business scenarios.- Supports multiple formats: Word, Excel, etc., to meet the needs of importing common documents.
+
+### 3. Expansion of data sources: Google Sheets and custom APIs
+- Integration with Google Sheets API: Allows direct access to data in Google Sheets as an analysis source.
+- Custom database API interface: Provides a generic API adapter.
+- All external data sources can be utilized along with a full set of functions such as data cleaning, previewing, and analysis.

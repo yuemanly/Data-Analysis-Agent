@@ -24,6 +24,7 @@ def create_app() -> Flask:
     from .output          import bp as output_bp
     from .mcp             import bp as mcp_bp
     from .dashboard       import bp as dashboard_bp
+    from .knowledge       import bp as knowledge_bp
 
     app.register_blueprint(models_bp)
     app.register_blueprint(datasource_bp)
@@ -33,6 +34,7 @@ def create_app() -> Flask:
     app.register_blueprint(output_bp)
     app.register_blueprint(mcp_bp)
     app.register_blueprint(dashboard_bp)
+    app.register_blueprint(knowledge_bp)
 
     @app.get("/")
     def index():

@@ -22,6 +22,7 @@ def _build_agent(sess) -> BusinessAgent:
     return BusinessAgent(
         client=client, model=cfg.model, data_source=sess.data_source,
         enable_thinking=cfg.enable_thinking,
+        thinking_budget=cfg.thinking_budget,
         chart_store=chart_store,
         session_chart_ids=list(getattr(sess, "chart_ids", [])),
         color_scheme=getattr(sess, "ppt_color_scheme", "mckinsey"),
@@ -95,6 +96,7 @@ def chat_stream(sid: str):
             return
 
         collected: list[str] = []
+        collected_reasoning: list[str] = []
         completed_normally = False
 
         # ── Agent loop ─────────────────────────────────────────────────────
@@ -110,6 +112,7 @@ def chat_stream(sid: str):
         try:
             for event in agent.run(
                 message, list(sess.history), command=command,
+                last_reasoning=sess.last_reasoning,
                 ppt_title=ppt_title, ppt_slides=ppt_slides,
                 excel_tables=excel_tables, excel_filename=excel_filename,
                 report_title=report_title, report_sections=report_sections,
@@ -155,11 +158,16 @@ def chat_stream(sid: str):
 
                 if etype == "text":
                     collected.append(event.get("content", ""))
+                elif etype == "reasoning":
+                    collected_reasoning.append(event.get("content", ""))
 
             # Loop finished normally — save history
             completed_normally = True
             sess.add_user(message)
-            sess.add_assistant("".join(collected))
+            sess.add_assistant(
+                "".join(collected),
+                reasoning="".join(collected_reasoning),
+            )
 
         except Exception as exc:
             # Catch any unhandled exception from the agent so the frontend

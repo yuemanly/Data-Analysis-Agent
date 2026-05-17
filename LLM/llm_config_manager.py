@@ -37,6 +37,7 @@ class LLMConfig:
     context_window: Optional[int] = None    # 上下文窗口（tokens）
     max_output_tokens: Optional[int] = None  # 最大输出（tokens）
     enable_thinking: bool = False            # 启用推理链（DeepSeek-R1 / Claude 3.7+）
+    thinking_budget: int = 8000              # Claude extended thinking budget_tokens
 
 
 class LLMConfigManager:
@@ -128,7 +129,7 @@ class LLMConfigManager:
     def add_custom_model(
         self, name: str, base_url: str, model_name: str, api_key: str,
         context_window: Optional[int] = None, max_output_tokens: Optional[int] = None,
-        enable_thinking: bool = False,
+        enable_thinking: bool = False, thinking_budget: int = 8000,
     ) -> tuple[bool, str]:
         if not name or not name.strip():
             return False, "模型名称不能为空"
@@ -153,6 +154,7 @@ class LLMConfigManager:
             context_window=context_window,
             max_output_tokens=max_output_tokens,
             enable_thinking=enable_thinking,
+            thinking_budget=thinking_budget,
         )
 
         if self.save_configs():
@@ -165,7 +167,7 @@ class LLMConfigManager:
         self, provider: str, api_key: str,
         base_url: Optional[str] = None, model: Optional[str] = None,
         context_window: Optional[int] = None, max_output_tokens: Optional[int] = None,
-        enable_thinking: bool = False,
+        enable_thinking: bool = False, thinking_budget: int = 8000,
     ) -> bool:
         """设置内置提供商配置"""
         if provider not in self.DEFAULT_CONFIGS:
@@ -187,6 +189,7 @@ class LLMConfigManager:
             context_window=context_window if context_window is not None else defaults.get("context_window"),
             max_output_tokens=max_output_tokens if max_output_tokens is not None else defaults.get("max_output_tokens"),
             enable_thinking=enable_thinking,
+            thinking_budget=thinking_budget,
         )
 
         # 关键修复：不再写 os.environ，避免进程内“复活”
@@ -215,7 +218,7 @@ class LLMConfigManager:
     def update_custom_model(
         self, provider: str, base_url: str, model_name: str, api_key: str,
         context_window: Optional[int] = None, max_output_tokens: Optional[int] = None,
-        enable_thinking: bool = False,
+        enable_thinking: bool = False, thinking_budget: int = 8000,
     ) -> tuple[bool, str]:
         """更新已有自定义模型配置"""
         if provider not in self.configs:
@@ -240,6 +243,7 @@ class LLMConfigManager:
             context_window=context_window,
             max_output_tokens=max_output_tokens,
             enable_thinking=enable_thinking,
+            thinking_budget=thinking_budget,
         )
         if self.save_configs():
             return True, f"配置已更新"

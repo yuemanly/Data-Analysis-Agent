@@ -355,9 +355,14 @@ function renderBuiltinProviders(configs, defaults) {
           <div class="pf-row" style="align-items:center">
             <label>${t('settings.thinking')}</label>
             <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:13px;color:#475569">
-              <input type="checkbox" id="pthink-${key}" ${cfg.enable_thinking ? "checked" : ""}>
+              <input type="checkbox" id="pthink-${key}" ${cfg.enable_thinking ? "checked" : ""}
+                onchange="document.getElementById('pbudget-row-${key}').style.display=this.checked?'flex':'none'">
               ${t('settings.thinking_label')}
             </label>
+          </div>
+          <div class="pf-row" id="pbudget-row-${key}" style="display:${cfg.enable_thinking ? 'flex' : 'none'};align-items:center">
+            <label>${t('settings.budget') || '思考预算（tokens）'}</label>
+            <input type="number" id="pbudget-${key}" value="${cfg.thinking_budget ?? 8000}" min="1000" max="100000" step="1000">
           </div>
         </div>
         <div class="provider-actions">
@@ -405,6 +410,8 @@ function editCustomModel(provider) {
       document.getElementById("ac-ctx").value    = cfg.context_window != null ? cfg.context_window : "";
       document.getElementById("ac-output").value = cfg.max_output_tokens != null ? cfg.max_output_tokens : "";
       document.getElementById("ac-think").checked = !!cfg.enable_thinking;
+      document.getElementById("ac-budget").value   = cfg.thinking_budget ?? 8000;
+      document.getElementById("ac-budget-row").style.display = cfg.enable_thinking ? "flex" : "none";
       document.getElementById("ac-err").textContent = "";
       document.getElementById("ac-ok").textContent  = t('settings.editing_hint') || `编辑中：${provider}`;
       f.scrollIntoView({ behavior: "smooth", block: "nearest" });
@@ -412,28 +419,39 @@ function editCustomModel(provider) {
 }
 
 async function addCustomModel() {
-  const ctxRaw = document.getElementById("ac-ctx").value.trim();
-  const outRaw = document.getElementById("ac-output").value.trim();
+  const ctxRaw    = document.getElementById("ac-ctx").value.trim();
+  const outRaw    = document.getElementById("ac-output").value.trim();
+  const budgetRaw = document.getElementById("ac-budget").value.trim();
+  const thinkChecked = document.getElementById("ac-think").checked;
   const data = {
     name:            document.getElementById("ac-name").value.trim(),
     base_url:        document.getElementById("ac-url").value.trim(),
     model_name:      document.getElementById("ac-model").value.trim(),
     api_key:         document.getElementById("ac-key").value.trim(),
-    enable_thinking: document.getElementById("ac-think").checked,
+    enable_thinking: thinkChecked,
+    thinking_budget: budgetRaw ? parseInt(budgetRaw) : 8000,
     ...(ctxRaw ? { context_window:    parseInt(ctxRaw) } : {}),
     ...(outRaw ? { max_output_tokens: parseInt(outRaw) } : {}),
   };
   document.getElementById("ac-err").textContent = "";
   document.getElementById("ac-ok").textContent = "";
 
+  const resetForm = () => {
+    ["ac-name","ac-url","ac-model","ac-key","ac-ctx","ac-output","ac-budget"].forEach(
+      id => document.getElementById(id).value = ""
+    );
+    document.getElementById("ac-think").checked = false;
+    document.getElementById("ac-budget-row").style.display = "none";
+  };
+
   if (_editingCustomProvider) {
-    // Update existing
     const body = {
       provider:        _editingCustomProvider,
       base_url:        data.base_url,
       model_name:      data.model_name,
       api_key:         data.api_key,
       enable_thinking: data.enable_thinking,
+      thinking_budget: data.thinking_budget,
       ...(ctxRaw ? { context_window:    parseInt(ctxRaw) } : {}),
       ...(outRaw ? { max_output_tokens: parseInt(outRaw) } : {}),
     };
@@ -447,10 +465,7 @@ async function addCustomModel() {
     } else {
       document.getElementById("ac-ok").textContent = d.message || t('settings.save_ok');
       _editingCustomProvider = null;
-      ["ac-name","ac-url","ac-model","ac-key","ac-ctx","ac-output"].forEach(
-        id => document.getElementById(id).value = ""
-      );
-      document.getElementById("ac-think").checked = false;
+      resetForm();
       await Promise.all([loadModels(), loadBuiltinProviders()]);
       setTimeout(toggleAddCustom, 1200);
     }
@@ -466,10 +481,7 @@ async function addCustomModel() {
     document.getElementById("ac-err").textContent = d.error;
   } else {
     document.getElementById("ac-ok").textContent = d.message;
-    ["ac-name","ac-url","ac-model","ac-key","ac-ctx","ac-output"].forEach(
-      id => document.getElementById(id).value = ""
-    );
-    document.getElementById("ac-think").checked = false;
+    resetForm();
     await Promise.all([loadModels(), loadBuiltinProviders()]);
     setTimeout(toggleAddCustom, 1200);
   }
@@ -491,9 +503,11 @@ async function saveBuiltin(key) {
   const msgEl   = document.getElementById(`pmsg-${key}`);
   if (!apiKey) { msgEl.className="provider-msg err"; msgEl.textContent=t('settings.api_key_empty'); return; }
   msgEl.textContent = t('settings.saving');
+  const budgetRaw = document.getElementById(`pbudget-${key}`)?.value.trim();
   const body = {
     provider: key, api_key: apiKey, base_url: baseUrl, model,
     enable_thinking: document.getElementById(`pthink-${key}`).checked,
+    thinking_budget: budgetRaw ? parseInt(budgetRaw) : 8000,
   };
   if (ctxRaw) body.context_window    = parseInt(ctxRaw);
   if (outRaw) body.max_output_tokens = parseInt(outRaw);
@@ -526,69 +540,6 @@ async function clearBuiltin(key) {
     const msgEl = document.getElementById(`pmsg-${key}`);
     msgEl.className = "provider-msg ok"; msgEl.textContent = t('settings.cleared');
     await loadModels();
-  }
-}
-
-async function addCustomModel() {
-  const ctxRaw = document.getElementById("ac-ctx").value.trim();
-  const outRaw = document.getElementById("ac-output").value.trim();
-  const data = {
-    name:            document.getElementById("ac-name").value.trim(),
-    base_url:        document.getElementById("ac-url").value.trim(),
-    model_name:      document.getElementById("ac-model").value.trim(),
-    api_key:         document.getElementById("ac-key").value.trim(),
-    enable_thinking: document.getElementById("ac-think").checked,
-    ...(ctxRaw ? { context_window:    parseInt(ctxRaw) } : {}),
-    ...(outRaw ? { max_output_tokens: parseInt(outRaw) } : {}),
-  };
-  document.getElementById("ac-err").textContent = "";
-  document.getElementById("ac-ok").textContent = "";
-
-  if (_editingCustomProvider) {
-    const body = {
-      provider:        _editingCustomProvider,
-      base_url:        data.base_url,
-      model_name:      data.model_name,
-      api_key:         data.api_key,
-      enable_thinking: data.enable_thinking,
-      ...(ctxRaw ? { context_window:    parseInt(ctxRaw) } : {}),
-      ...(outRaw ? { max_output_tokens: parseInt(outRaw) } : {}),
-    };
-    const r = await fetch("/api/models/update", {
-      method: "POST", headers: {"Content-Type":"application/json"},
-      body: JSON.stringify(body)
-    });
-    const d = await r.json();
-    if (d.error) {
-      document.getElementById("ac-err").textContent = d.error;
-    } else {
-      document.getElementById("ac-ok").textContent = d.message || t('settings.save_ok');
-      _editingCustomProvider = null;
-      ["ac-name","ac-url","ac-model","ac-key","ac-ctx","ac-output"].forEach(
-        id => document.getElementById(id).value = ""
-      );
-      document.getElementById("ac-think").checked = false;
-      await Promise.all([loadModels(), loadBuiltinProviders()]);
-      setTimeout(toggleAddCustom, 1200);
-    }
-    return;
-  }
-
-  const r = await fetch("/api/models/add", {
-    method: "POST", headers: {"Content-Type":"application/json"},
-    body: JSON.stringify(data)
-  });
-  const d = await r.json();
-  if (d.error) {
-    document.getElementById("ac-err").textContent = d.error;
-  } else {
-    document.getElementById("ac-ok").textContent = d.message;
-    ["ac-name","ac-url","ac-model","ac-key","ac-ctx","ac-output"].forEach(
-      id => document.getElementById(id).value = ""
-    );
-    document.getElementById("ac-think").checked = false;
-    await Promise.all([loadModels(), loadBuiltinProviders()]);
-    setTimeout(toggleAddCustom, 1200);
   }
 }
 
@@ -1033,14 +984,14 @@ async function sendMessage() {
 
 function _tickFinishedSteps(stepsEl) {
   stepsEl.querySelectorAll('.tool-step[data-finished]:not(.done)').forEach(s => {
-    s.className = "tool-step done";
+    s.classList.add("done");
     const spinEl = s.querySelector(".spin");
     if (spinEl) { spinEl.classList.remove("spin"); spinEl.textContent = "✓"; }
   });
 }
 function _tickAllSteps(stepsEl) {
   stepsEl.querySelectorAll(".tool-step:not(.done)").forEach(s => {
-    s.className = "tool-step done";
+    s.classList.add("done");
     const spinEl = s.querySelector(".spin");
     if (spinEl) { spinEl.classList.remove("spin"); spinEl.textContent = "✓"; }
   });
@@ -1051,7 +1002,19 @@ function handleEvent(ev, stepsEl, bubbleEl, typing) {
     _tickFinishedSteps(stepsEl);
     const s = document.createElement("div");
     s.className = "tool-step";
-    s.innerHTML = `<span class="spin">⟳</span> ${esc(ev.display)}`;
+    const shortText = esc(ev.display);
+    const fullText  = esc(ev.detail || ev.display);
+    const hasMore   = ev.detail && ev.detail !== ev.display;
+    s.innerHTML = `<span class="spin">⟳</span><span class="tool-step-text">${shortText}</span>${hasMore ? '<span class="tool-step-toggle">⋯</span>' : ''}`;
+    if (hasMore) {
+      s.dataset.short = shortText;
+      s.dataset.full  = fullText;
+      s.addEventListener("click", () => {
+        const expanded = s.classList.toggle("expanded");
+        s.querySelector(".tool-step-text").innerHTML = expanded ? s.dataset.full : s.dataset.short;
+        s.querySelector(".tool-step-toggle").textContent = expanded ? "▲" : "⋯";
+      });
+    }
     stepsEl.appendChild(s);
     scrollBottom();
   }

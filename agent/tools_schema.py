@@ -10,6 +10,33 @@ AGENT_TOOLS = [
     {
         "type": "function",
         "function": {
+            "name": "query_knowledge",
+            "description": (
+                "Search the business knowledge base for canonical metric definitions, "
+                "business rules, and context notes. Call this before writing SQL for "
+                "any named business metric (DAU, LTV, retention, ARPU, etc.) to check "
+                "if a canonical definition or SQL template already exists. "
+                "If a result is returned, follow its definition and sql_template exactly. "
+                "Skip this call for ad-hoc exploratory queries with no named metric."
+            ),
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "question": {
+                        "type": "string",
+                        "description": (
+                            "The metric name or business concept to look up, "
+                            "e.g. 'DAU', '次日留存', 'LTV', '付费渗透率'."
+                        ),
+                    }
+                },
+                "required": ["question"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
             "name": "get_schema",
             "description": (
                 "Get the full schema of the connected data source — tables, columns, "
@@ -319,7 +346,7 @@ AGENT_TOOLS = [
             "name": "propose_excel_export",
             "description": (
                 "Show the user a preview of which tables will be exported BEFORE generating the Excel file.\n"
-                "Call this (not export_excel) when the /export command is active.\n"
+                "ONLY call this when the /export slash command is active. NEVER call proactively.\n"
                 "The frontend renders a confirmation card with Confirm / Edit / Cancel buttons."
             ),
             "parameters": {
@@ -349,7 +376,7 @@ AGENT_TOOLS = [
             "name": "propose_report_outline",
             "description": (
                 "Show the user a report outline for review BEFORE generating the Word file.\n"
-                "Call this (not export_report) when the /report command is active.\n"
+                "ONLY call this when the /report slash command is active. NEVER call proactively.\n"
                 "The frontend renders a confirmation card with Confirm / Edit / Cancel buttons."
             ),
             "parameters": {
@@ -382,7 +409,7 @@ AGENT_TOOLS = [
             "name": "propose_ppt_outline",
             "description": (
                 "Show the user a slide-by-slide PPT outline for review BEFORE generating the file.\n"
-                "Call this (not generate_ppt) when the /ppt command is active.\n"
+                "ONLY call this when the /ppt slash command is active. NEVER call proactively.\n"
                 "The frontend will render an editable card with Confirm / Edit / Cancel buttons.\n"
                 "Use exactly the same parameters as generate_ppt."
             ),
@@ -416,7 +443,7 @@ AGENT_TOOLS = [
             "name": "generate_ppt",
             "description": (
                 "Generate a professional McKinsey-style PowerPoint (.pptx) presentation.\n"
-                "Use for /ppt command or whenever the user asks to create slides/a deck.\n\n"
+                "ONLY called automatically by the system after user confirms a propose_ppt_outline. NEVER call directly.\n\n"
                 "SLIDE LAYOUTS and their params:\n"
                 "  cover            title, subtitle?(str), author?(str), date?(str)\n"
                 "  toc              title?='目录', items(list of [num_str, title, desc])\n"
@@ -512,7 +539,7 @@ AGENT_TOOLS = [
             "name": "propose_dashboard_outline",
             "description": (
                 "Show the user a dashboard outline for review BEFORE generating the dashboard.\n"
-                "Call this (not generate_dashboard) when the /dashboard command is active.\n"
+                "ONLY call this when the /dashboard slash command is active. NEVER call proactively.\n"
                 "The frontend renders a confirmation card with Confirm / Edit / Cancel buttons.\n"
                 "Do NOT call generate_dashboard in the same turn."
             ),

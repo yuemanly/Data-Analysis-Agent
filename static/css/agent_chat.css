@@ -115,12 +115,25 @@ html, body { height: 100%; font-family: -apple-system, BlinkMacSystemFont, "Sego
 
 /* tool steps */
 .tool-steps { display: flex; flex-direction: column; gap: 3px; }
-.tool-step { display: inline-flex; align-items: center; gap: 6px;
+.tool-step {
+  display: inline-flex; align-items: baseline; gap: 6px;
   background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 20px;
-  padding: 3px 10px; font-size: 12px; color: #1d4ed8; max-width: fit-content; }
-.tool-step .spin { animation: spin .65s linear infinite; }
+  padding: 3px 10px; font-size: 12px; color: #1d4ed8;
+  max-width: 100%; cursor: pointer; user-select: none;
+}
+.tool-step .spin { animation: spin .65s linear infinite; flex-shrink: 0; }
 @keyframes spin { to { transform: rotate(360deg); } }
 .tool-step.done { background: #f0fdf4; border-color: #bbf7d0; color: #15803d; }
+.tool-step-text {
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  flex: 1; min-width: 0;
+}
+.tool-step.expanded .tool-step-text {
+  white-space: pre-wrap; word-break: break-all;
+}
+.tool-step-toggle {
+  flex-shrink: 0; font-size: 10px; opacity: 0.5; margin-left: 2px;
+}
 
 /* chart */
 .chart-frame { width: 100%; max-width: 700px; border: 1px solid #e2e8f0; border-radius: 10px;
@@ -653,3 +666,164 @@ html, body { height: 100%; font-family: -apple-system, BlinkMacSystemFont, "Sego
   font-family: inherit;
   color: #1e293b;
 }
+
+/* ── Knowledge Base modal ────────────────────────────────────────── */
+.kb-modal {
+  width: 760px; max-width: 96vw; max-height: 90vh;
+  display: flex; flex-direction: column; overflow: hidden;
+}
+.kb-modal .modal-title { flex-shrink: 0; }
+.kb-modal .modal-footer { flex-shrink: 0; }
+
+/* Tab bar */
+.kb-tabs {
+  display: flex; gap: 4px; flex-shrink: 0;
+  border-bottom: 1px solid #e2e8f0; padding-bottom: 0; margin-bottom: 14px;
+}
+.kb-tab {
+  border: none; background: transparent; cursor: pointer;
+  padding: 8px 14px; font-size: 13px; font-weight: 500; color: #64748b;
+  border-bottom: 2px solid transparent; margin-bottom: -1px;
+  border-radius: 6px 6px 0 0; transition: all .15s;
+}
+.kb-tab:hover { color: #1e293b; background: #f8fafc; }
+.kb-tab.active { color: #3b82f6; border-bottom-color: #3b82f6; background: transparent; }
+.kb-tab-import { margin-left: auto; }
+.kb-tab-import.active { color: #7c3aed; border-bottom-color: #7c3aed; }
+
+/* Panel container */
+.kb-panel { flex: 1; min-height: 0; display: flex; flex-direction: column; overflow: hidden; }
+
+/* Toolbar row */
+.kb-toolbar {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 10px; flex-shrink: 0;
+}
+.kb-count { font-size: 12px; color: #94a3b8; }
+
+/* Scrollable record list */
+.kb-list {
+  flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 8px;
+  padding-right: 4px;
+}
+.kb-empty { font-size: 13px; color: #94a3b8; text-align: center; padding: 32px 0; }
+
+/* Individual knowledge card */
+.kb-card {
+  background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px;
+  padding: 12px 14px; display: flex; flex-direction: column; gap: 6px;
+  transition: border-color .15s;
+}
+.kb-card:hover { border-color: #bfdbfe; }
+.kb-card-head {
+  display: flex; align-items: flex-start; justify-content: space-between; gap: 8px;
+}
+.kb-card-name {
+  font-size: 14px; font-weight: 600; color: #1e293b;
+  display: flex; align-items: center; gap: 6px;
+}
+.kb-badge {
+  font-size: 10px; font-weight: 600; padding: 2px 7px; border-radius: 10px;
+  letter-spacing: .04em; flex-shrink: 0;
+}
+.kb-badge-metric { background: #dbeafe; color: #1d4ed8; }
+.kb-badge-rule-warning { background: #fef9c3; color: #854d0e; }
+.kb-badge-rule-error   { background: #fee2e2; color: #991b1b; }
+.kb-badge-note  { background: #f3e8ff; color: #6b21a8; }
+.kb-card-meta {
+  font-size: 12px; color: #475569; line-height: 1.55;
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.kb-card-sql {
+  font-size: 11px; color: #64748b; background: #0f172a; color: #94a3b8;
+  border-radius: 5px; padding: 5px 9px; font-family: monospace;
+  white-space: pre-wrap; word-break: break-all;
+  max-height: 54px; overflow: hidden;
+}
+.kb-card-actions { display: flex; gap: 5px; flex-shrink: 0; }
+.kb-act-btn {
+  border: 1px solid #e2e8f0; background: #fff; border-radius: 6px;
+  padding: 3px 9px; font-size: 12px; color: #64748b; cursor: pointer;
+  transition: all .15s;
+}
+.kb-act-btn:hover { border-color: #3b82f6; color: #3b82f6; }
+.kb-act-btn.danger:hover { border-color: #ef4444; color: #ef4444; }
+
+/* Import zone */
+.kb-import-zone {
+  border: 2px dashed #bfdbfe; border-radius: 12px;
+  background: #eff6ff; padding: 36px 20px;
+  display: flex; flex-direction: column; align-items: center; gap: 8px;
+  transition: border-color .15s; cursor: default;
+}
+.kb-import-zone.drag-over { border-color: #3b82f6; background: #dbeafe; }
+.kb-import-icon { font-size: 36px; }
+.kb-import-hint { font-size: 14px; font-weight: 500; color: #1d4ed8; }
+.kb-import-sub  { font-size: 12px; color: #64748b; }
+
+/* Preview area */
+.kb-preview-header {
+  display: flex; align-items: flex-start; justify-content: space-between;
+  gap: 10px; margin-bottom: 12px; flex-shrink: 0;
+}
+.kb-preview-title { font-size: 14px; font-weight: 600; color: #1e293b; }
+.kb-preview-sub   { font-size: 12px; color: #64748b; margin-top: 2px; }
+.kb-preview-list  {
+  display: flex; flex-direction: column; gap: 8px;
+  max-height: 360px; overflow-y: auto; padding-right: 4px;
+}
+
+/* Preview card (editable) */
+.kb-prev-card {
+  background: #fff; border: 1px solid #e2e8f0; border-radius: 10px;
+  padding: 12px 14px; display: flex; flex-direction: column; gap: 8px;
+}
+.kb-prev-card-head {
+  display: flex; align-items: center; justify-content: space-between; gap: 8px;
+}
+.kb-prev-card-type { font-size: 12px; font-weight: 600; color: #7c3aed; }
+.kb-prev-fields { display: flex; flex-direction: column; gap: 6px; }
+.kb-prev-field { display: flex; flex-direction: column; gap: 3px; }
+.kb-prev-label { font-size: 11px; color: #94a3b8; font-weight: 500; text-transform: uppercase; letter-spacing: .05em; }
+.kb-prev-input {
+  width: 100%; border: 1px solid #e2e8f0; border-radius: 6px;
+  padding: 5px 9px; font-size: 13px; font-family: inherit; color: #1e293b;
+  background: #f8fafc; resize: vertical;
+}
+.kb-prev-input:focus { outline: 2px solid #3b82f6; outline-offset: 1px; border-color: transparent; }
+.kb-prev-delete {
+  border: none; background: transparent; color: #94a3b8; cursor: pointer;
+  font-size: 16px; line-height: 1; padding: 2px 4px; border-radius: 4px;
+  transition: color .15s; flex-shrink: 0;
+}
+.kb-prev-delete:hover { color: #ef4444; }
+
+/* ── Knowledge toggle switch ─────────────────────────────────────── */
+.kb-toggle {
+  width: 34px; height: 18px; border-radius: 9px;
+  background: #cbd5e1; position: relative; cursor: pointer;
+  transition: background .2s; flex-shrink: 0;
+}
+.kb-toggle.on { background: #22c55e; }
+.kb-toggle-knob {
+  position: absolute; top: 2px; left: 2px;
+  width: 14px; height: 14px; border-radius: 50%;
+  background: #fff; box-shadow: 0 1px 3px #0002;
+  transition: left .2s;
+}
+.kb-toggle.on .kb-toggle-knob { left: 18px; }
+
+/* ── Knowledge source file list ──────────────────────────────────── */
+.kb-file-row {
+  display: flex; align-items: center; gap: 8px;
+  padding: 7px 10px; border-radius: 8px;
+  background: #f8fafc; border: 1px solid #e2e8f0;
+  font-size: 12px;
+}
+.kb-file-icon { font-size: 14px; flex-shrink: 0; }
+.kb-file-name {
+  flex: 1; color: #1e293b; font-weight: 500;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.kb-file-meta { color: #94a3b8; white-space: nowrap; flex-shrink: 0; }

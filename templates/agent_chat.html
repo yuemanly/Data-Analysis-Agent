@@ -61,6 +61,12 @@
       </div>
     </div>
 
+    <!-- Knowledge base -->
+    <div>
+      <div class="sec-label">业务知识库</div>
+      <button class="btn btn-ghost" style="width:100%" onclick="openOverlay('ov-knowledge')">🧠 管理业务知识</button>
+    </div>
+
     <!-- New chat / Save -->
     <div style="display:flex;gap:6px;">
       <button class="btn btn-ghost" style="flex:1" onclick="newChat()" data-i18n="sidebar.new_chat">✦ 新对话</button>
@@ -79,7 +85,7 @@
     </div>
 
     <div class="sidebar-footer">
-      <span style="color:#f8f9f9;">v3.0beta Author: Zafer_Liu</span>
+      <span style="color:#f8f9f9;">v3.0 Author: Zafer_Liu</span>
       <div style="display:flex;gap:6px;align-items:center;">
         <button class="btn-lang" id="lang-toggle" onclick="setLang(getLang()==='zh'?'en':'zh')">EN</button>
         <button class="btn-update" onclick="openOverlay('ov-update')" data-i18n="sidebar.check_update">🔄 检查更新</button>
@@ -335,9 +341,13 @@
           <input type="number" id="ac-output" data-i18n-ph="add_custom.out_ph"   placeholder="最大输出（tokens，选填）"   style="flex:1">
         </div>
         <label style="display:flex;align-items:center;gap:6px;font-size:13px;color:#475569;cursor:pointer;padding:2px 0">
-          <input type="checkbox" id="ac-think">
+          <input type="checkbox" id="ac-think" onchange="document.getElementById('ac-budget-row').style.display=this.checked?'flex':'none'">
           <span data-i18n="add_custom.think">启用思考模式</span>
         </label>
+        <div id="ac-budget-row" style="display:none;align-items:center;gap:8px;font-size:13px;color:#475569">
+          <label style="white-space:nowrap" data-i18n="add_custom.budget">思考预算（tokens）</label>
+          <input type="number" id="ac-budget" value="8000" min="1000" max="100000" step="1000" style="flex:1">
+        </div>
         <div class="msg-err" id="ac-err"></div>
         <div class="msg-ok"  id="ac-ok"></div>
         <div style="display:flex;gap:7px;justify-content:flex-end;">
@@ -468,10 +478,188 @@
   </div>
 </div>
 
+<!-- ══ Knowledge Base Modal ══════════════════════════════════════════ -->
+<div class="overlay" id="ov-knowledge" onclick="closeOutside(event,'ov-knowledge')">
+  <div class="modal kb-modal">
+    <div class="modal-title">🧠 业务知识库</div>
+
+    <!-- Tab bar -->
+    <div class="kb-tabs">
+      <button class="kb-tab active" onclick="kbSwitchTab('metrics',this)">📐 指标定义</button>
+      <button class="kb-tab" onclick="kbSwitchTab('rules',this)">🛡 业务规则</button>
+      <button class="kb-tab" onclick="kbSwitchTab('notes',this)">📝 背景知识</button>
+      <button class="kb-tab kb-tab-import" onclick="kbSwitchTab('import',this)">⬆ 导入文件</button>
+    </div>
+
+    <!-- ── Tab: metrics ── -->
+    <div class="kb-panel" id="kb-panel-metrics">
+      <div class="kb-toolbar">
+        <span class="kb-count" id="kb-metrics-count">—</span>
+        <button class="btn-sm btn-sm-primary" onclick="kbOpenForm('metrics')">＋ 新增指标</button>
+      </div>
+      <div class="kb-list" id="kb-list-metrics">
+        <div class="kb-empty">暂无指标定义</div>
+      </div>
+    </div>
+
+    <!-- ── Tab: rules ── -->
+    <div class="kb-panel" id="kb-panel-rules" style="display:none">
+      <div class="kb-toolbar">
+        <span class="kb-count" id="kb-rules-count">—</span>
+        <button class="btn-sm btn-sm-primary" onclick="kbOpenForm('rules')">＋ 新增规则</button>
+      </div>
+      <div class="kb-list" id="kb-list-rules">
+        <div class="kb-empty">暂无业务规则</div>
+      </div>
+    </div>
+
+    <!-- ── Tab: notes ── -->
+    <div class="kb-panel" id="kb-panel-notes" style="display:none">
+      <div class="kb-toolbar">
+        <span class="kb-count" id="kb-notes-count">—</span>
+        <button class="btn-sm btn-sm-primary" onclick="kbOpenForm('notes')">＋ 新增背景知识</button>
+      </div>
+      <div class="kb-list" id="kb-list-notes">
+        <div class="kb-empty">暂无背景知识</div>
+      </div>
+    </div>
+
+    <!-- ── Tab: import ── -->
+    <div class="kb-panel" id="kb-panel-import" style="display:none">
+      <div class="kb-import-zone" id="kb-drop-zone"
+           ondragover="event.preventDefault()" ondrop="kbOnDrop(event)">
+        <div class="kb-import-icon">📄</div>
+        <div class="kb-import-hint">拖拽文件到此处，或点击选择</div>
+        <div class="kb-import-sub">支持 .xlsx / .xls / .docx</div>
+        <input type="file" id="kb-file-input" accept=".xlsx,.xls,.docx"
+               style="display:none" onchange="kbOnFileSelect(event)">
+        <button class="btn-sm btn-sm-primary" style="margin-top:10px"
+                onclick="document.getElementById('kb-file-input').click()">选择文件</button>
+      </div>
+
+      <!-- Historical uploaded files -->
+      <div id="kb-files-section" style="margin-top:14px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+          <span style="font-size:12px;font-weight:600;color:#475569;text-transform:uppercase;letter-spacing:.06em">已上传的源文件</span>
+          <span style="font-size:11px;color:#94a3b8;cursor:pointer" onclick="kbLoadFiles()">↻ 刷新</span>
+        </div>
+        <div id="kb-files-list">
+          <div class="kb-empty" style="padding:12px 0;font-size:12px">加载中…</div>
+        </div>
+      </div>
+
+      <!-- Parsing spinner -->
+      <div class="ds-loading" id="kb-parsing" style="display:none">
+        <div class="ds-spinner"></div>
+        <span>正在解析文件，请稍候…</span>
+      </div>
+
+      <!-- Preview cards -->
+      <div id="kb-preview-area" style="display:none">
+        <div class="kb-preview-header">
+          <div>
+            <div class="kb-preview-title" id="kb-preview-title">解析结果预览</div>
+            <div class="kb-preview-sub" id="kb-preview-sub"></div>
+          </div>
+          <div style="display:flex;gap:8px">
+            <button class="btn-sm btn-sm-ghost" onclick="kbCancelImport()">重新选择</button>
+            <button class="btn-sm btn-sm-primary" onclick="kbConfirmImport()">✓ 全部入库</button>
+          </div>
+        </div>
+        <div class="kb-preview-list" id="kb-preview-list"></div>
+      </div>
+
+      <div class="msg-err" id="kb-import-err" style="margin-top:10px"></div>
+      <div class="msg-ok"  id="kb-import-ok"  style="margin-top:10px"></div>
+    </div>
+
+    <div class="modal-footer">
+      <button class="btn-sm btn-sm-ghost" onclick="closeOverlay('ov-knowledge')">关闭</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Inline edit form (shared, floats over modal) ── -->
+<div class="overlay" id="ov-kb-form" onclick="closeOutside(event,'ov-kb-form')">
+  <div class="modal" style="width:520px">
+    <div class="modal-title" id="kb-form-title">新增指标</div>
+
+    <!-- metrics fields -->
+    <div id="kb-fields-metrics">
+      <div class="f-row">
+        <label>指标名称 <span style="color:#ef4444">*</span></label>
+        <input type="text" id="kbf-name" placeholder="例如：DAU">
+      </div>
+      <div class="f-row">
+        <label>别名（逗号分隔）</label>
+        <input type="text" id="kbf-alias" placeholder="日活, 日活跃用户">
+      </div>
+      <div class="f-row">
+        <label>业务定义</label>
+        <textarea id="kbf-definition" rows="2" placeholder="当日启动游戏一次及以上的独立设备数"></textarea>
+      </div>
+      <div class="f-row">
+        <label>SQL 模板</label>
+        <textarea id="kbf-sql" rows="3" placeholder="SELECT COUNT(DISTINCT device_id) FROM events WHERE date='{date}'"></textarea>
+      </div>
+      <div class="f-row">
+        <label>口径备注</label>
+        <textarea id="kbf-notes" rows="2" placeholder="剔除机器人流量；iOS/Android 分开统计"></textarea>
+      </div>
+    </div>
+
+    <!-- rules fields -->
+    <div id="kb-fields-rules" style="display:none">
+      <div class="f-row">
+        <label>规则 ID <span style="color:#ef4444">*</span></label>
+        <input type="text" id="kbf-rule-id" placeholder="例如：retention_sanity">
+      </div>
+      <div class="f-row">
+        <label>描述</label>
+        <input type="text" id="kbf-rule-desc" placeholder="次日留存不能超过首日 DAU">
+      </div>
+      <div class="f-row">
+        <label>违反条件</label>
+        <textarea id="kbf-rule-cond" rows="2" placeholder="day2_retention > day1_dau"></textarea>
+      </div>
+      <div class="f-row">
+        <label>严重程度</label>
+        <select id="kbf-rule-sev">
+          <option value="warning">warning</option>
+          <option value="error">error</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- notes fields -->
+    <div id="kb-fields-notes" style="display:none">
+      <div class="f-row">
+        <label>主题 <span style="color:#ef4444">*</span></label>
+        <input type="text" id="kbf-topic" placeholder="例如：流失分析">
+      </div>
+      <div class="f-row">
+        <label>内容</label>
+        <textarea id="kbf-content" rows="4" placeholder="分析流失时需检查：版本更新、服务器波动、竞品上线…"></textarea>
+      </div>
+      <div class="f-row">
+        <label>标签（逗号分隔）</label>
+        <input type="text" id="kbf-tags" placeholder="流失, churn, 留存">
+      </div>
+    </div>
+
+    <div class="msg-err" id="kb-form-err"></div>
+    <div class="modal-footer">
+      <button class="btn-sm btn-sm-ghost" onclick="closeOverlay('ov-kb-form')">取消</button>
+      <button class="btn-sm btn-sm-primary" onclick="kbSubmitForm()">保存</button>
+    </div>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script src="{{ url_for('static', filename='js/i18n.js') }}"></script>
 <script src="{{ url_for('static', filename='js/mcp_settings.js') }}"></script>
 <script src="{{ url_for('static', filename='js/agent_chat.js') }}"></script>
+<script src="{{ url_for('static', filename='js/knowledge_panel.js') }}"></script>
 </body>
 </html>

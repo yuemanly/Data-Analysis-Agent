@@ -13,7 +13,7 @@ import logging
 import time
 from typing import Iterator, List, Dict, Any, Optional
 
-from .prompts      import SYSTEM_PROMPT, COMMAND_HINTS
+from .prompts      import get_system_prompt, COMMAND_HINTS
 from .tools_schema import AGENT_TOOLS, get_tools_with_mcp
 from .tools_data   import DataToolsMixin
 from .tools_export import ExportToolsMixin
@@ -37,6 +37,7 @@ class BusinessAgent(DataToolsMixin, ExportToolsMixin):
         model: str,
         data_source=None,
         enable_thinking: bool = False,
+        thinking_budget: int = 8000,
         chart_store: Optional[dict] = None,
         session_chart_ids: Optional[List[str]] = None,
         color_scheme: str = "mckinsey",
@@ -46,6 +47,7 @@ class BusinessAgent(DataToolsMixin, ExportToolsMixin):
         self.model = model
         self.data_source = data_source
         self.enable_thinking = enable_thinking
+        self.thinking_budget = thinking_budget
         self._schema_cache: Optional[str] = None
         self._chart_store: dict = chart_store if chart_store is not None else {}
         self._session_chart_ids: List[str] = session_chart_ids if session_chart_ids is not None else []
@@ -64,6 +66,7 @@ class BusinessAgent(DataToolsMixin, ExportToolsMixin):
         user_message: str,
         history: List[Dict],
         command: str = "",
+        last_reasoning: str = "",
         ppt_title: str = "",
         ppt_slides: Optional[List] = None,
         excel_tables: Optional[List] = None,
@@ -151,13 +154,26 @@ class BusinessAgent(DataToolsMixin, ExportToolsMixin):
             return
 
 
-        system = SYSTEM_PROMPT
+        system = get_system_prompt()
         if command and command in COMMAND_HINTS:
             system += f"\n\n[ACTIVE COMMAND: /{command}]\n{COMMAND_HINTS[command]}"
+
+        prior_reasoning_msg: List[Dict] = []
+        if last_reasoning:
+            summary = last_reasoning[:1500]  # cap to avoid ballooning context
+            prior_reasoning_msg = [{
+                "role": "system",
+                "content": (
+                    f"[Prior turn reasoning summary]\n{summary}\n"
+                    "[End of prior reasoning — use this context to inform your analysis "
+                    "but do not repeat or reference it explicitly to the user.]"
+                ),
+            }]
 
         messages: List[Dict] = [
             {"role": "system", "content": system},
             *history[-20:],
+            *prior_reasoning_msg,
             {"role": "user", "content": user_message},
         ]
 
@@ -204,9 +220,9 @@ class BusinessAgent(DataToolsMixin, ExportToolsMixin):
                     )
                 messages.append({"role": "user", "content": nudge})
                 _force_propose = False
-                _max_tokens = 16384
+                _max_tokens = 131072
             else:
-                _max_tokens = 8192 if command in _PROPOSE_FLOW_CMDS else 2048
+                _max_tokens = 131072
 
             call_kwargs: Dict[str, Any] = dict(
                 model=self.model,
@@ -217,132 +233,96 @@ class BusinessAgent(DataToolsMixin, ExportToolsMixin):
                 max_tokens=_max_tokens,
             )
 
-            use_stream = True
             if self.enable_thinking and self.model.startswith("claude"):
-                use_stream = False
                 call_kwargs["temperature"] = 1
                 call_kwargs["extra_body"] = {
-                    "thinking": {"type": "enabled", "budget_tokens": 8000}
+                    "thinking": {"type": "enabled", "budget_tokens": self.thinking_budget}
                 }
 
             # ── Streaming path ────────────────────────────────────────────────
-            if use_stream:
-                call_kwargs["stream"] = True
-                call_kwargs["stream_options"] = {"include_usage": True}
-                _t0 = time.monotonic()
-                try:
-                    stream = self.client.chat.completions.create(**call_kwargs)
-                except Exception as exc:
-                    log.error("[llm] API call failed: %s", exc)
-                    yield {"type": "error", "message": f"LLM 调用失败: {exc}"}
-                    yield {"type": "done"}
-                    return
+            call_kwargs["stream"] = True
+            call_kwargs["stream_options"] = {"include_usage": True}
+            _t0 = time.monotonic()
+            try:
+                stream = self.client.chat.completions.create(**call_kwargs)
+            except Exception as exc:
+                log.error("[llm] API call failed: %s", exc)
+                yield {"type": "error", "message": f"LLM 调用失败: {exc}"}
+                yield {"type": "done"}
+                return
 
-                tc_acc: Dict[int, Dict[str, str]] = {}
-                content_parts: List[str] = []
-                reasoning_parts: List[str] = []
-                usage_data = None
-                finish_reason = None
+            tc_acc: Dict[int, Dict[str, str]] = {}
+            content_parts: List[str] = []
+            reasoning_parts: List[str] = []
+            usage_data = None
+            finish_reason = None
 
-                for chunk in stream:
-                    if getattr(chunk, "usage", None):
-                        usage_data = chunk.usage
-                    if not chunk.choices:
-                        continue
-                    choice = chunk.choices[0]
-                    if choice.finish_reason:
-                        finish_reason = choice.finish_reason
-                    delta = choice.delta
+            for chunk in stream:
+                if getattr(chunk, "usage", None):
+                    usage_data = chunk.usage
+                if not chunk.choices:
+                    continue
+                choice = chunk.choices[0]
+                if choice.finish_reason:
+                    finish_reason = choice.finish_reason
+                delta = choice.delta
 
-                    if delta.content:
-                        content_parts.append(delta.content)
-                        if command not in _PROPOSE_CMDS:
-                            yield {"type": "text_delta", "content": delta.content}
+                if delta.content:
+                    content_parts.append(delta.content)
+                    if command not in _PROPOSE_CMDS:
+                        yield {"type": "text_delta", "content": delta.content}
 
-                    rc = getattr(delta, "reasoning_content", None)
-                    if rc:
-                        reasoning_parts.append(rc)
+                rc = getattr(delta, "reasoning_content", None)
+                if rc:
+                    reasoning_parts.append(rc)
 
-                    if delta.tool_calls:
-                        for tcd in delta.tool_calls:
-                            idx = tcd.index
-                            if idx not in tc_acc:
-                                tc_acc[idx] = {"id": "", "name": "", "args": ""}
-                            if tcd.id:
-                                tc_acc[idx]["id"] = tcd.id
-                            if tcd.function:
-                                if tcd.function.name:
-                                    tc_acc[idx]["name"] += tcd.function.name
-                                if tcd.function.arguments:
-                                    tc_acc[idx]["args"] += tcd.function.arguments
+                if delta.tool_calls:
+                    for tcd in delta.tool_calls:
+                        idx = tcd.index
+                        if idx not in tc_acc:
+                            tc_acc[idx] = {"id": "", "name": "", "args": ""}
+                        if tcd.id:
+                            tc_acc[idx]["id"] = tcd.id
+                        if tcd.function:
+                            if tcd.function.name:
+                                tc_acc[idx]["name"] += tcd.function.name
+                            if tcd.function.arguments:
+                                tc_acc[idx]["args"] += tcd.function.arguments
 
-                full_content = "".join(content_parts)
-                has_tool_calls = bool(tc_acc) and finish_reason == "tool_calls"
-                reasoning_content = "".join(reasoning_parts) or None
+            full_content = "".join(content_parts)
+            has_tool_calls = bool(tc_acc) and finish_reason == "tool_calls"
+            reasoning_content = "".join(reasoning_parts) or None
 
-                if usage_data:
-                    _elapsed = time.monotonic() - _t0
-                    log.info(
-                        "[llm] stream done  finish=%s  in=%.0f out=%.0f  %.2fs",
-                        finish_reason,
-                        usage_data.prompt_tokens,
-                        usage_data.completion_tokens,
-                        _elapsed,
-                    )
-                    yield {
-                        "type": "usage",
-                        "prompt_tokens": usage_data.prompt_tokens,
-                        "completion_tokens": usage_data.completion_tokens,
-                        "total_tokens": usage_data.total_tokens,
-                    }
+            if usage_data:
+                _elapsed = time.monotonic() - _t0
+                log.info(
+                    "[llm] stream done  finish=%s  in=%.0f out=%.0f  %.2fs",
+                    finish_reason,
+                    usage_data.prompt_tokens,
+                    usage_data.completion_tokens,
+                    _elapsed,
+                )
+                yield {
+                    "type": "usage",
+                    "prompt_tokens": usage_data.prompt_tokens,
+                    "completion_tokens": usage_data.completion_tokens,
+                    "total_tokens": usage_data.total_tokens,
+                }
 
-                class _F:
-                    def __init__(self, name, arguments):
-                        self.name = name
-                        self.arguments = arguments
+            class _F:
+                def __init__(self, name, arguments):
+                    self.name = name
+                    self.arguments = arguments
 
-                class _TC:
-                    def __init__(self, id_, name, arguments):
-                        self.id = id_
-                        self.function = _F(name, arguments)
+            class _TC:
+                def __init__(self, id_, name, arguments):
+                    self.id = id_
+                    self.function = _F(name, arguments)
 
-                tc_objects = [
-                    _TC(v["id"], v["name"], v["args"])
-                    for _, v in sorted(tc_acc.items())
-                ]
-
-            # ── Non-streaming path (thinking mode) ────────────────────────────
-            else:
-                _t0 = time.monotonic()
-                try:
-                    resp = self.client.chat.completions.create(**call_kwargs)
-                except Exception as exc:
-                    log.error("[llm] API call failed (non-stream): %s", exc)
-                    yield {"type": "error", "message": f"LLM 调用失败: {exc}"}
-                    yield {"type": "done"}
-                    return
-
-                if resp.usage:
-                    _elapsed = time.monotonic() - _t0
-                    log.info(
-                        "[llm] done (thinking)  in=%.0f out=%.0f  %.2fs",
-                        resp.usage.prompt_tokens,
-                        resp.usage.completion_tokens,
-                        _elapsed,
-                    )
-                    yield {
-                        "type": "usage",
-                        "prompt_tokens": resp.usage.prompt_tokens,
-                        "completion_tokens": resp.usage.completion_tokens,
-                        "total_tokens": resp.usage.total_tokens,
-                    }
-
-                choice = resp.choices[0]
-                msg = choice.message
-                full_content = msg.content or ""
-                tc_objects = msg.tool_calls or []
-                has_tool_calls = bool(tc_objects) and choice.finish_reason == "tool_calls"
-                reasoning_content = getattr(msg, "reasoning_content", None)
+            tc_objects = [
+                _TC(v["id"], v["name"], v["args"])
+                for _, v in sorted(tc_acc.items())
+            ]
 
             # ── Dispatch tool calls ───────────────────────────────────────────
             if has_tool_calls:
@@ -368,6 +348,52 @@ class BusinessAgent(DataToolsMixin, ExportToolsMixin):
 
                 _outline_proposed = False
 
+                # Guard: if any tool call is a blocked output tool, cancel the whole
+                # tool-call batch and instruct the model to reply with plain text.
+                _OUTPUT_TOOL_GUARDS = {
+                    "propose_ppt_outline":       {"ppt", "ppt_revise"},
+                    "generate_ppt":              {"ppt_confirm"},
+                    "propose_report_outline":    {"report", "report_revise"},
+                    "export_report":             {"report_confirm"},
+                    "propose_excel_export":      {"export", "excel_revise"},
+                    "export_excel":              {"excel_confirm"},
+                    "propose_dashboard_outline": {"dashboard", "dashboard_revise"},
+                    "generate_dashboard":        {"dashboard_confirm"},
+                }
+                blocked = [
+                    tc for tc in tc_objects
+                    if tc.function.name in _OUTPUT_TOOL_GUARDS
+                    and command not in _OUTPUT_TOOL_GUARDS[tc.function.name]
+                ]
+                if blocked:
+                    blocked_names = ", ".join(tc.function.name for tc in blocked)
+                    log.warning("[tool] blocked output tool(s): %s (command=%r)", blocked_names, command)
+                    # Append assistant turn + fake tool results so the model can continue
+                    messages.append({
+                        "role": "assistant",
+                        "content": full_content,
+                        "tool_calls": [
+                            {"id": tc.id, "type": "function",
+                             "function": {"name": tc.function.name, "arguments": tc.function.arguments}}
+                            for tc in tc_objects
+                        ],
+                    })
+                    for tc in tc_objects:
+                        if tc.function.name in _OUTPUT_TOOL_GUARDS:
+                            content = (
+                                f"[SYSTEM BLOCK] '{tc.function.name}' requires a slash command. "
+                                "Do NOT call output tools in regular chat. "
+                                "Reply to the user in plain text, and suggest the relevant slash command if appropriate."
+                            )
+                        else:
+                            content = "ok"
+                        messages.append({
+                            "role": "tool",
+                            "tool_call_id": tc.id,
+                            "content": content,
+                        })
+                    continue  # next iteration — model will now reply in plain text
+
                 _parsed_tools = []
                 for tc in tc_objects:
                     name = tc.function.name
@@ -376,27 +402,30 @@ class BusinessAgent(DataToolsMixin, ExportToolsMixin):
                     except json.JSONDecodeError:
                         args = {}
                     display_map = {
-                        "get_schema":            "读取数据结构...",
-                        "create_analysis_table": f"提取字段 → {args.get('table_name', 'analysis_data')}...",
-                        "query_data":            f"执行查询: {args.get('sql', '')[:60]}...",
-                        "run_analysis":          f"运行分析: {args.get('analysis_name', '?')} · 目标列: {args.get('target_column', '?')}...",
-                        "generate_chart":        f"生成 {args.get('chart_type', '?')} 图表...",
-                        "profile_data":          f"分析数据概况: {args.get('table_name', '自动检测')}...",
-                        "clean_data":            f"数据清洗 [{args.get('operation', '?')}]: {args.get('table_name', '自动检测')}...",
-                        "export_excel":          f"导出 Excel → {', '.join(args.get('tables', []))[:50]}...",
-                        "export_report":         f"生成 Word 报告: {args.get('title', '?')[:40]}...",
-                        "propose_excel_export":  f"预览 Excel 导出：{', '.join(args.get('tables', ['*']))[:40]}...",
-                        "propose_report_outline": f"生成报告大纲：{args.get('title', '?')[:40]}（{len(args.get('sections', []))} 章节）...",
-                        "propose_ppt_outline":   f"生成 PPT 大纲：{args.get('title', '?')[:40]} ({len(args.get('slides', []))} 张)...",
-                        "generate_ppt":          f"生成 PPT: {args.get('title', '?')[:40]} ({len(args.get('slides', []))} 张)...",
-                        "set_ppt_color_scheme":  f"切换配色方案 → {args.get('scheme', '?')}...",
-                        "propose_dashboard_outline": f"生成看板大纲：{args.get('name', '?')[:40]} ({len(args.get('widgets', []))} 个)...",
-                        "generate_dashboard":    f"生成看板：{args.get('name', '?')[:40]} ({len(args.get('widgets', []))} 个组件)...",
+                        "query_knowledge":       f"查询知识库: {args.get('question', '')}",
+                        "get_schema":            "读取数据结构",
+                        "create_analysis_table": f"提取字段 → {args.get('table_name', 'analysis_data')}",
+                        "query_data":            f"执行查询: {args.get('sql', '')}",
+                        "run_analysis":          f"运行分析: {args.get('analysis_name', '?')} · 目标列: {args.get('target_column', '?')}",
+                        "generate_chart":        f"生成 {args.get('chart_type', '?')} 图表",
+                        "profile_data":          f"分析数据概况: {args.get('table_name', '自动检测')}",
+                        "clean_data":            f"数据清洗 [{args.get('operation', '?')}]: {args.get('table_name', '自动检测')}",
+                        "export_excel":          f"导出 Excel → {', '.join(args.get('tables', []))}",
+                        "export_report":         f"生成 Word 报告: {args.get('title', '?')}",
+                        "propose_excel_export":  f"预览 Excel 导出：{', '.join(args.get('tables', ['*']))}",
+                        "propose_report_outline": f"生成报告大纲：{args.get('title', '?')}（{len(args.get('sections', []))} 章节）",
+                        "propose_ppt_outline":   f"生成 PPT 大纲：{args.get('title', '?')} ({len(args.get('slides', []))} 张)",
+                        "generate_ppt":          f"生成 PPT: {args.get('title', '?')} ({len(args.get('slides', []))} 张)",
+                        "set_ppt_color_scheme":  f"切换配色方案 → {args.get('scheme', '?')}",
+                        "propose_dashboard_outline": f"生成看板大纲：{args.get('name', '?')} ({len(args.get('widgets', []))} 个)",
+                        "generate_dashboard":    f"生成看板：{args.get('name', '?')} ({len(args.get('widgets', []))} 个组件)",
                     }
+                    full_display = display_map.get(name, name)
                     yield {
                         "type": "tool_start",
                         "tool": name,
-                        "display": display_map.get(name, name),
+                        "display": full_display[:60] + ("…" if len(full_display) > 60 else ""),
+                        "detail": full_display,
                     }
                     _parsed_tools.append((tc, name, args))
 
@@ -406,7 +435,11 @@ class BusinessAgent(DataToolsMixin, ExportToolsMixin):
                     _tool_t0 = time.monotonic()
 
                     try:
-                        if name == "get_schema":
+                        if name == "query_knowledge":
+                            tool_result = self._tool_query_knowledge(
+                                question=args.get("question", "")
+                            )
+                        elif name == "get_schema":
                             tool_result = self._tool_get_schema()
                         elif name == "create_analysis_table":
                             tool_result = self._tool_create_analysis_table(

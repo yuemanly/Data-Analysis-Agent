@@ -33,12 +33,13 @@ def set_builtin():
     context_window    = _to_int(d.get("context_window"))
     max_output_tokens = _to_int(d.get("max_output_tokens"))
     enable_thinking   = bool(d.get("enable_thinking", False))
+    thinking_budget   = _to_int(d.get("thinking_budget")) or 8000
     if not provider or not api_key:
         return jsonify({"error": "provider 和 api_key 不能为空"}), 400
     ok = config_manager.set_config(
         provider, api_key, base_url=base_url, model=model,
         context_window=context_window, max_output_tokens=max_output_tokens,
-        enable_thinking=enable_thinking,
+        enable_thinking=enable_thinking, thinking_budget=thinking_budget,
     )
     if ok:
         return jsonify({"ok": True})
@@ -63,6 +64,7 @@ def add_model():
         context_window=_to_int(d.get("context_window")),
         max_output_tokens=_to_int(d.get("max_output_tokens")),
         enable_thinking=bool(d.get("enable_thinking", False)),
+        thinking_budget=_to_int(d.get("thinking_budget")) or 8000,
     )
     if ok:
         return jsonify({"ok": True, "message": msg})
@@ -87,6 +89,7 @@ def update_model():
         context_window=_to_int(d.get("context_window")),
         max_output_tokens=_to_int(d.get("max_output_tokens")),
         enable_thinking=bool(d.get("enable_thinking", False)),
+        thinking_budget=_to_int(d.get("thinking_budget")) or 8000,
     )
     if ok:
         return jsonify({"ok": True, "message": msg})

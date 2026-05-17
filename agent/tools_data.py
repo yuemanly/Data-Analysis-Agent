@@ -8,6 +8,42 @@ class DataToolsMixin:
     """All methods here rely on self.data_source, self._schema_cache,
     self.ppt_color_scheme — defined in BusinessAgent.__init__."""
 
+    # ── Knowledge base lookup ─────────────────────────────────────────────────
+
+    def _tool_query_knowledge(self, question: str) -> str:
+        try:
+            from Function.Knowledge.knowledge_base import KnowledgeBase
+            kb = KnowledgeBase()
+            results = kb.search(question)
+        except Exception as e:
+            return f"Knowledge base unavailable: {e}"
+
+        if not any(results.values()):
+            return "No relevant knowledge found."
+
+        lines: list[str] = []
+
+        for m in results["metrics"]:
+            lines.append(f"[Metric] {m['name']}")
+            if m.get("alias"):
+                lines.append(f"  Alias: {m['alias']}")
+            if m.get("definition"):
+                lines.append(f"  Definition: {m['definition']}")
+            if m.get("sql_template"):
+                lines.append(f"  SQL template: {m['sql_template']}")
+            if m.get("notes"):
+                lines.append(f"  Notes: {m['notes']}")
+
+        for r in results["rules"]:
+            lines.append(f"[Rule/{r['severity'].upper()}] {r['rule_id']}: {r['description']}")
+            if r.get("condition"):
+                lines.append(f"  Condition: {r['condition']}")
+
+        for n in results["notes"]:
+            lines.append(f"[Context] {n['topic']}: {n['content']}")
+
+        return "\n".join(lines)
+
     # ── Basic data access ─────────────────────────────────────────────────────
 
     def _tool_get_schema(self) -> str:
